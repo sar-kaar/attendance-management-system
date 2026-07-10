@@ -5,6 +5,7 @@ db.sqlite3
 .env
 venv/
 env/
+ENV/
 .DS_Store
 *.jpg
 *.jpeg
@@ -20,4 +21,3 @@ staticfiles/
 htmlcov/
 desktop.ini
 
-docs/*.md
