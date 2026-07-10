@@ -1,6 +1,6 @@
-[docs] Real Database Schema (Django/SQLite)
+# Real Database Schema (Django/SQLite)
 
-Verified Jul 9 (Day 3) against actual `*/models.py` files across `accounts`, `students`, `courses`, `attendance`. This documents what exists today, not a planned design. Four tables total. No `Enrollment` table.
+Verified Jul 9 (Day 3) against actual `*/models.py` files across `accounts`, `students`, `courses`, `attendance`. This documents what exists today, not a planned design. Five tables total (Enrollment added Jul 9, see section 5).
 
 ## 1. accounts_user
 
@@ -80,12 +80,34 @@ courses_course --1:N--> attendance_attendance
 
 `accounts_user` and `students_student` are not directly related. A `student`-role user account and a `Student` record are independent today.
 
-## Known gap: no Enrollment table
+## 5. courses_enrollment
 
-There is no `enrollment` / `enrollments` table linking students to courses. `attendance_attendance` references both `student` and `course` directly, so in practice any student can be marked present/absent/late in any course, regardless of whether they are actually taking it. Nothing in the schema prevents this today.
+Added Jul 9 (Day 3). Resolved the earlier gap before UI work started.
 
-**Decision (Jul 9, Day 3):** deferring the `Enrollment` table for now rather than adding it same-day as an undiscussed schema change. Reasoning: it touches the `attendance` API contract that Ekata's UI branches (`feature/US-05-student-ui`, `feature/US-06-attendance-ui`) will build against, and the team's actual first kickoff meeting is tonight (Jul 9). Recommend raising it there as `feature/US-05-enrollment-decision` (already reserved for Week 4 in `GIT_WORKFLOW.md` Section 7) and deciding as a team whether to add it before or after the UI work starts. This is a call for the team, not a unilateral one, so it is logged here rather than acted on. If the team decides to add it, it will need: a migration, a decision on whether it replaces the implicit student+course relationship in `attendance` queries, and an update to this doc and `REALITY_CHECK.md`.
+| Field | Type | Notes |
+|---|---|---|
+| id | BigAutoField (PK) | auto-increment |
+| student | ForeignKey → students_student | CASCADE, related_name=`enrollments` |
+| course | ForeignKey → courses_course | CASCADE, related_name=`enrollments` |
+| enrolled_date | DateField | auto_now_add |
+| is_active | BooleanField | default True |
+
+Composite unique constraint: (`student`, `course`). One enrollment per student per course.
+
+Backfill migration `0003_backfill_enrollment` populated rows from existing attendance history — every distinct (student, course) pair in `attendance_attendance` got an active Enrollment row.
+
+**Done (Jul 10, Day 4):** `AttendanceSerializer.validate()` now rejects marking attendance for unenrolled students, and `AttendanceViewSet.mark_bulk` filters out non-enrolled students per record (returned in a `skipped` list) instead of creating attendance for them.
+
+## Updated Relationships
+
+```
+accounts_user (faculty role) --1:N--> courses_course
+students_student --1:N--> attendance_attendance
+students_student --1:N--> courses_enrollment
+courses_course --1:N--> attendance_attendance
+courses_course --1:N--> courses_enrollment
+```
 
 ## Endpoints touching these tables
 
-See `Guidelines/REALITY_CHECK.md` "API Endpoints" table for the full list; all of `/api/students/`, `/api/courses/`, `/api/attendance/*` map directly onto the four tables above with no additional join tables.
+See `Guidelines/REALITY_CHECK.md` "API Endpoints" table for the full list; all of `/api/students/`, `/api/courses/`, `/api/attendance/*` map onto the five tables above. The Enrollment table is not yet exposed via REST — it exists as a constraint backing. An `/api/enrollments/` endpoint can be added when the frontend needs it.
