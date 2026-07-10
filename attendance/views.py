@@ -5,7 +5,7 @@ from django.utils import timezone
 from .models import Attendance
 from .serializers import AttendanceSerializer, BulkAttendanceSerializer
 from students.models import Student
-from courses.models import Course
+from courses.models import Course, Enrollment
 
 
 class IsAdminOrFaculty(permissions.BasePermission):
@@ -41,8 +41,21 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         course = Course.objects.get(id=data['course_id'])
+
+        enrolled_student_ids = set(
+            Enrollment.objects.filter(course=course, is_active=True)
+            .values_list('student_id', flat=True)
+        )
+
         created = []
+        skipped = []
         for record in data['records']:
+            if record['student_id'] not in enrolled_student_ids:
+                skipped.append({
+                    'student_id': record['student_id'],
+                    'reason': 'not enrolled in this course',
+                })
+                continue
             att, _ = Attendance.objects.update_or_create(
                 student_id=record['student_id'],
                 course=course,
@@ -55,7 +68,12 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                 }
             )
             created.append(att)
-        return Response(AttendanceSerializer(created, many=True).data, status=status.HTTP_201_CREATED)
+
+        response_data = AttendanceSerializer(created, many=True).data
+        return Response(
+            {'created': response_data, 'skipped': skipped},
+            status=status.HTTP_201_CREATED,
+        )
 
     @action(detail=False, methods=['get'])
     def my_attendance(self, request):
