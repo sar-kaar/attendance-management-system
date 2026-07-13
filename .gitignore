@@ -20,4 +20,10 @@ staticfiles/
 .coverage
 htmlcov/
 desktop.ini
-
+.venv/
+.vscode/
+*.whl
+server_stdout.txt
+server_stderr.txt
+schema.dot
+docs/schema.png

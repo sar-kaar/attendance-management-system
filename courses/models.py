@@ -14,3 +14,16 @@ class Course(models.Model):
 
     def __str__(self):
         return f"{self.code} - {self.name}"
+
+
+class Enrollment(models.Model):
+    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='enrollments')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
+    enrolled_date = models.DateField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ['student', 'course']
+
+    def __str__(self):
+        return f"{self.student} -> {self.course}"

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Attendance
+from courses.models import Enrollment
 
 
 class AttendanceSerializer(serializers.ModelSerializer):
@@ -16,6 +17,20 @@ class AttendanceSerializer(serializers.ModelSerializer):
 
     def get_course_name(self, obj):
         return f"{obj.course.code} - {obj.course.name}"
+
+    def validate(self, attrs):
+        student = attrs.get('student') or getattr(self.instance, 'student', None)
+        course = attrs.get('course') or getattr(self.instance, 'course', None)
+        if student and course:
+            is_enrolled = Enrollment.objects.filter(
+                student=student, course=course, is_active=True
+            ).exists()
+            if not is_enrolled:
+                raise serializers.ValidationError(
+                    f"Student {student} is not enrolled in course {course}. "
+                    "Attendance cannot be marked."
+                )
+        return attrs
 
 
 class BulkAttendanceSerializer(serializers.Serializer):

@@ -1,6 +1,6 @@
 # ER Diagram — Attendance Management System
 
-Built from verified `docs/database-schema.md` (Jul 9, Day 3). 4 tables. No `Enrollment` table — documented gap below.
+Built from verified `docs/database-schema.md` (Jul 10, Day 4). 5 tables, including `Enrollment` (added Jul 9, Day 3 — see Changelog).
 
 ## Diagram (Mermaid ERD)
 
@@ -63,9 +63,19 @@ erDiagram
         DateTime updated_at
     }
 
+    COURSES_ENROLLMENT {
+        BigAutoField id PK
+        Integer student_id FK
+        Integer course_id FK
+        DateField enrolled_date
+        Boolean is_active
+    }
+
     ACCOUNTS_USER ||--o{ COURSES_COURSE : "teaches (faculty role, SET_NULL)"
     STUDENTS_STUDENT ||--o{ ATTENDANCE_ATTENDANCE : "has (CASCADE)"
     COURSES_COURSE ||--o{ ATTENDANCE_ATTENDANCE : "has (CASCADE)"
+    STUDENTS_STUDENT ||--o{ COURSES_ENROLLMENT : "enrolls (CASCADE)"
+    COURSES_COURSE ||--o{ COURSES_ENROLLMENT : "enrolls (CASCADE)"
 ```
 
 Render: paste block into https://mermaid.live, or view directly on GitHub (native Mermaid support in `.md` files).
@@ -73,15 +83,15 @@ Render: paste block into https://mermaid.live, or view directly on GitHub (nativ
 ## Notes / Constraints
 
 - `attendance_attendance` has composite unique constraint on (`student`, `course`, `date`) — one record per student per course per day. Not expressible in base Mermaid ERD notation, noted here instead.
-- `accounts_user` and `students_student` are **not** FK-linked. A student-role login account and a `Student` record are independent today (see gap below).
+- `accounts_user` and `students_student` are **not** FK-linked. A student-role login account and a `Student` record are independent today (unrelated to the Enrollment changelog below).
 - `courses_course.faculty` → `accounts_user`, `on_delete=SET_NULL`, `limit_choices_to={role: 'faculty'}`.
 - `attendance_attendance.marked_by_user_id` is a plain `IntegerField`, not an FK — stores an id only, no referential integrity.
 
-## Known Gap: No Enrollment Table
+## Changelog
 
-No `enrollment` table links students to courses. `attendance_attendance` references `student` and `course` directly, so nothing today prevents marking a student present/absent in a course they aren't enrolled in.
-
-**Status (Jul 9, Day 3):** deferred pending team decision at kickoff meeting, not forgotten. Reserved branch if added: `feature/US-05-enrollment-decision` (Week 4, see `GIT_WORKFLOW.md` Section 7). If added later, this diagram and `docs/database-schema.md` need a matching update: new `ENROLLMENT` entity, `STUDENTS_STUDENT ||--o{ ENROLLMENT`, `COURSES_COURSE ||--o{ ENROLLMENT`, and a decision on whether `attendance_attendance` starts validating against it.
+- **Jul 9 (Day 3):** `courses_enrollment` table added. Composite unique constraint (`student`, `course`). Backfill migration `0003_backfill_enrollment` populated rows from existing attendance history.
+- **Jul 10 (Day 4):** `AttendanceSerializer.validate()` now rejects marking attendance for unenrolled students; `AttendanceViewSet.mark_bulk` filters out non-enrolled students per record (returned in a `skipped` list).
+- Not yet exposed via REST: no `/api/enrollments/` endpoint yet. Add when frontend needs it.
 
 ## Source of Truth
 
