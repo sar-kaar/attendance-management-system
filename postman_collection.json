@@ -1,0 +1,484 @@
+{
+	"info": {
+		"name": "Attendance Management System API",
+		"description": "Complete API collection for CSE 405 Attendance Management System.\n\nBASE_URL: http://127.0.0.1:8000\n\nHow to use:\n1. Run 'Login as Admin' to get tokens\n2. Token auto-saves to collection variables\n3. All other requests use the saved token automatically",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8000"
+		},
+		{
+			"key": "access_token",
+			"value": ""
+		},
+		{
+			"key": "refresh_token",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"newstudent\",\n  \"email\": \"new@test.com\",\n  \"password\": \"test1234\",\n  \"first_name\": \"New\",\n  \"last_name\": \"Student\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/auth/register/", "host": ["{{base_url}}"], "path": ["api", "auth", "register", ""] }
+					}
+				},
+				{
+					"name": "Login as Admin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"test1234\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/auth/login/", "host": ["{{base_url}}"], "path": ["api", "auth", "login", ""] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"pm.collectionVariables.set('access_token', res.access);",
+									"pm.collectionVariables.set('refresh_token', res.refresh);",
+									"console.log('Tokens saved! Access: ' + res.access.substring(0, 30) + '...');"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Login as Faculty",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"faculty1\",\n  \"password\": \"test1234\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/auth/login/", "host": ["{{base_url}}"], "path": ["api", "auth", "login", ""] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"pm.collectionVariables.set('access_token', res.access);",
+									"pm.collectionVariables.set('refresh_token', res.refresh);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Login as Student",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"student1\",\n  \"password\": \"test1234\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/auth/login/", "host": ["{{base_url}}"], "path": ["api", "auth", "login", ""] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"pm.collectionVariables.set('access_token', res.access);",
+									"pm.collectionVariables.set('refresh_token', res.refresh);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/auth/token/refresh/", "host": ["{{base_url}}"], "path": ["api", "auth", "token", "refresh", ""] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"pm.collectionVariables.set('access_token', res.access);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Profile (/me)",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{base_url}}/api/auth/me/", "host": ["{{base_url}}"], "path": ["api", "auth", "me", ""] }
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"9841234567\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/auth/me/", "host": ["{{base_url}}"], "path": ["api", "auth", "me", ""] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Students",
+			"item": [
+				{
+					"name": "List Students",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{base_url}}/api/students/", "host": ["{{base_url}}"], "path": ["api", "students", ""] }
+					}
+				},
+				{
+					"name": "Get Student Detail",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{base_url}}/api/students/1/", "host": ["{{base_url}}"], "path": ["api", "students", "1", ""] }
+					}
+				},
+				{
+					"name": "Create Student",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"Api\",\n  \"last_name\": \"Created\",\n  \"email\": \"api@test.com\",\n  \"student_id\": \"S1010\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/students/", "host": ["{{base_url}}"], "path": ["api", "students", ""] }
+					}
+				},
+				{
+					"name": "Update Student",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"9800000000\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/students/1/", "host": ["{{base_url}}"], "path": ["api", "students", "1", ""] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Courses",
+			"item": [
+				{
+					"name": "List Courses",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{base_url}}/api/courses/", "host": ["{{base_url}}"], "path": ["api", "courses", ""] }
+					}
+				},
+				{
+					"name": "Get Course Detail",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{base_url}}/api/courses/1/", "host": ["{{base_url}}"], "path": ["api", "courses", "1", ""] }
+					}
+				},
+				{
+					"name": "Create Course",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Operating Systems\",\n  \"code\": \"CSE203\",\n  \"credits\": 3,\n  \"faculty\": 2\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/courses/", "host": ["{{base_url}}"], "path": ["api", "courses", ""] }
+					}
+				},
+				{
+					"name": "Update Course",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"description\": \"Updated description\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/courses/1/", "host": ["{{base_url}}"], "path": ["api", "courses", "1", ""] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Enrollments",
+			"item": [
+				{
+					"name": "List Enrollments",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{base_url}}/api/enrollments/", "host": ["{{base_url}}"], "path": ["api", "enrollments", ""] }
+					}
+				},
+				{
+					"name": "Filter by Course",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/enrollments/?course=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "enrollments", ""],
+							"query": [{ "key": "course", "value": "1" }]
+						}
+					}
+				},
+				{
+					"name": "Filter by Active Status",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/enrollments/?is_active=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "enrollments", ""],
+							"query": [{ "key": "is_active", "value": "true" }]
+						}
+					}
+				},
+				{
+					"name": "Get Enrollment Detail",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{base_url}}/api/enrollments/1/", "host": ["{{base_url}}"], "path": ["api", "enrollments", "1", ""] }
+					}
+				},
+				{
+					"name": "Create Enrollment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"student\": 5,\n  \"course\": 2\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/enrollments/", "host": ["{{base_url}}"], "path": ["api", "enrollments", ""] }
+					}
+				},
+				{
+					"name": "Deactivate Enrollment",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"is_active\": false\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/enrollments/1/", "host": ["{{base_url}}"], "path": ["api", "enrollments", "1", ""] }
+					}
+				},
+				{
+					"name": "Reactivate Enrollment",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"is_active\": true\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/enrollments/1/", "host": ["{{base_url}}"], "path": ["api", "enrollments", "1", ""] }
+					}
+				},
+				{
+					"name": "Delete Enrollment",
+					"request": {
+						"method": "DELETE",
+						"url": { "raw": "{{base_url}}/api/enrollments/12/", "host": ["{{base_url}}"], "path": ["api", "enrollments", "12", ""] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Attendance",
+			"item": [
+				{
+					"name": "List Attendance",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{base_url}}/api/attendance/", "host": ["{{base_url}}"], "path": ["api", "attendance", ""] }
+					}
+				},
+				{
+					"name": "Filter by Course",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/attendance/?course=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "attendance", ""],
+							"query": [{ "key": "course", "value": "1" }]
+						}
+					}
+				},
+				{
+					"name": "Filter by Date",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/attendance/?date=2026-07-13",
+							"host": ["{{base_url}}"],
+							"path": ["api", "attendance", ""],
+							"query": [{ "key": "date", "value": "2026-07-13" }]
+						}
+					}
+				},
+				{
+					"name": "Get Attendance Detail",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{base_url}}/api/attendance/1/", "host": ["{{base_url}}"], "path": ["api", "attendance", "1", ""] }
+					}
+				},
+				{
+					"name": "Mark Bulk Attendance",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"course_id\": 1,\n  \"date\": \"2026-07-14\",\n  \"records\": [\n    {\"student_id\": 1, \"status\": \"present\"},\n    {\"student_id\": 2, \"status\": \"absent\"},\n    {\"student_id\": 3, \"status\": \"late\"}\n  ]\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/attendance/mark_bulk/", "host": ["{{base_url}}"], "path": ["api", "attendance", "mark_bulk", ""] }
+					}
+				},
+				{
+					"name": "My Attendance (Student)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/attendance/my_attendance/?student_id=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "attendance", "my_attendance", ""],
+							"query": [{ "key": "student_id", "value": "1" }]
+						}
+					}
+				},
+				{
+					"name": "Report",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/attendance/report/?course=1&start_date=2026-07-01&end_date=2026-07-31",
+							"host": ["{{base_url}}"],
+							"path": ["api", "attendance", "report", ""],
+							"query": [
+								{ "key": "course", "value": "1" },
+								{ "key": "start_date", "value": "2026-07-01" },
+								{ "key": "end_date", "value": "2026-07-31" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Dashboard",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{base_url}}/api/attendance/dashboard/", "host": ["{{base_url}}"], "path": ["api", "attendance", "dashboard", ""] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Exports",
+			"item": [
+				{
+					"name": "Export CSV",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/attendance/export_csv/?course=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "attendance", "export_csv", ""],
+							"query": [{ "key": "course", "value": "1" }]
+						}
+					}
+				},
+				{
+					"name": "Export PDF",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/attendance/export_pdf/?course=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "attendance", "export_pdf", ""],
+							"query": [{ "key": "course", "value": "1" }]
+						}
+					}
+				}
+			]
+		}
+	]
+}
