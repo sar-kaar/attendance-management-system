@@ -42,4 +42,15 @@ class EnrollmentSerializer(serializers.ModelSerializer):
                 existing = existing.exclude(pk=self.instance.pk)
             if existing.exists():
                 raise serializers.ValidationError("Student is already enrolled in this course.")
+            inactive = Enrollment.objects.filter(student=student, course=course, is_active=False)
+            if inactive.exists() and not self.instance:
+                self._reactivate = inactive.first()
         return data
+
+    def create(self, validated_data):
+        if getattr(self, '_reactivate', None):
+            enr = self._reactivate
+            enr.is_active = True
+            enr.save(update_fields=['is_active'])
+            return enr
+        return super().create(validated_data)

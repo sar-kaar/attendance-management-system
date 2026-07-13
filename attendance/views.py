@@ -49,22 +49,24 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         data = serializer.validated_data
         course = Course.objects.get(id=data['course_id'])
 
-        enrolled_student_ids = set(
-            Enrollment.objects.filter(course=course, is_active=True)
-            .values_list('student_id', flat=True)
-        )
+        enrolled_students = {
+            e.student.student_id: e.student
+            for e in Enrollment.objects.filter(course=course, is_active=True).select_related('student')
+        }
 
         created = []
         skipped = []
         for record in data['records']:
-            if record['student_id'] not in enrolled_student_ids:
+            sid = record['student_id']
+            if sid not in enrolled_students:
                 skipped.append({
-                    'student_id': record['student_id'],
+                    'student_id': sid,
                     'reason': 'not enrolled in this course',
                 })
                 continue
+            student = enrolled_students[sid]
             att, _ = Attendance.objects.update_or_create(
-                student_id=record['student_id'],
+                student=student,
                 course=course,
                 date=data['date'],
                 defaults={
