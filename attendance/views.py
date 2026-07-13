@@ -49,22 +49,24 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         data = serializer.validated_data
         course = Course.objects.get(id=data['course_id'])
 
-        enrolled_student_ids = set(
-            Enrollment.objects.filter(course=course, is_active=True)
-            .values_list('student_id', flat=True)
-        )
+        enrolled_students = {
+            e.student.student_id: e.student
+            for e in Enrollment.objects.filter(course=course, is_active=True).select_related('student')
+        }
 
         created = []
         skipped = []
         for record in data['records']:
-            if record['student_id'] not in enrolled_student_ids:
+            sid = record['student_id']
+            if sid not in enrolled_students:
                 skipped.append({
-                    'student_id': record['student_id'],
+                    'student_id': sid,
                     'reason': 'not enrolled in this course',
                 })
                 continue
+            student = enrolled_students[sid]
             att, _ = Attendance.objects.update_or_create(
-                student_id=record['student_id'],
+                student=student,
                 course=course,
                 date=data['date'],
                 defaults={
@@ -110,6 +112,50 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             'present': present,
             'absent': absent,
             'attendance_percentage': percentage,
+        })
+
+    @action(detail=False, methods=['get'])
+    def dashboard(self, request):
+        today = timezone.now().date()
+        total_students = Student.objects.filter(is_active=True).count()
+        total_courses = Course.objects.filter(is_active=True).count()
+        today_attendance = Attendance.objects.filter(date=today)
+        today_present = today_attendance.filter(status='present').count() + today_attendance.filter(status='late').count()
+        today_absent = today_attendance.filter(status='absent').count()
+        today_total = today_attendance.count()
+        today_pct = round((today_present / today_total * 100), 1) if today_total > 0 else 0
+
+        total_records = Attendance.objects.count()
+        overall_present = Attendance.objects.filter(status='present').count() + Attendance.objects.filter(status='late').count()
+        overall_absent = Attendance.objects.filter(status='absent').count()
+        overall_pct = round((overall_present / total_records * 100), 1) if total_records > 0 else 0
+
+        recent = Attendance.objects.select_related('student', 'course').order_by('-date', '-created_at')[:10]
+
+        return Response({
+            'total_students': total_students,
+            'total_courses': total_courses,
+            'today': {
+                'total': today_total,
+                'present': today_present,
+                'absent': today_absent,
+                'percentage': today_pct,
+            },
+            'overall': {
+                'total': total_records,
+                'present': overall_present,
+                'absent': overall_absent,
+                'percentage': overall_pct,
+            },
+            'recent_attendance': [
+                {
+                    'student': f"{a.student.first_name} {a.student.last_name}",
+                    'course': a.course.code,
+                    'date': str(a.date),
+                    'status': a.status,
+                }
+                for a in recent
+            ],
         })
 
     @action(detail=False, methods=['get'])

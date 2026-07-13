@@ -103,8 +103,8 @@ class BulkAttendanceTest(TestCase):
             'course_id': self.course.id,
             'date': str(date.today()),
             'records': [
-                {'student_id': self.student1.id, 'status': 'present'},
-                {'student_id': self.student2.id, 'status': 'absent'},
+                {'student_id': 'STU001', 'status': 'present'},
+                {'student_id': 'STU002', 'status': 'absent'},
             ]
         }
         response = self.client.post('/api/attendance/mark_bulk/', payload, format='json')
@@ -121,8 +121,8 @@ class BulkAttendanceTest(TestCase):
             'course_id': self.course.id,
             'date': str(date.today()),
             'records': [
-                {'student_id': self.student1.id, 'status': 'present'},
-                {'student_id': unenrolled.id, 'status': 'present'},
+                {'student_id': 'STU001', 'status': 'present'},
+                {'student_id': 'STU003', 'status': 'present'},
             ]
         }
         response = self.client.post('/api/attendance/mark_bulk/', payload, format='json')
