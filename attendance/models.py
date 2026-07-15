@@ -8,6 +8,8 @@ class Attendance(models.Model):
         PRESENT = 'present', 'Present'
         ABSENT = 'absent', 'Absent'
         LATE = 'late', 'Late'
+        LATE_PRESENT = 'lp', 'Late Present'
+        ECA = 'eca', 'Extra-Curricular Activity'
 
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='attendances')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='attendances')
