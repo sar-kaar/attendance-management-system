@@ -27,3 +27,4 @@ server_stdout.txt
 server_stderr.txt
 schema.dot
 docs/schema.png
+sqlite_mcp_server.db

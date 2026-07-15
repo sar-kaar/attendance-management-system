@@ -1,6 +1,4 @@
 import json
-import numpy as np
-import face_recognition
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -11,6 +9,7 @@ from attendance.models import Attendance
 
 
 def _decode_face_encoding(encoding_str):
+    import numpy as np
     if not encoding_str:
         return None
     return np.array(json.loads(encoding_str))
@@ -19,6 +18,8 @@ def _decode_face_encoding(encoding_str):
 def _encode_image(image_file):
     try:
         import io
+        import numpy as np
+        import face_recognition
         image_bytes = image_file.read()
         image_array = np.frombuffer(image_bytes, dtype=np.uint8)
         image = face_recognition.load_image_file(io.BytesIO(image_bytes))
@@ -99,6 +100,7 @@ def recognize_face(request):
     best_match = None
     best_distance = float('inf')
 
+    import face_recognition
     for student in students_with_faces:
         known_encoding = _decode_face_encoding(student.face_encoding)
         if known_encoding is None:
@@ -161,6 +163,7 @@ def mark_attendance_by_face(request):
     best_match = None
     best_distance = float('inf')
 
+    import face_recognition
     for student in students_with_faces:
         known_encoding = _decode_face_encoding(student.face_encoding)
         if known_encoding is None:
