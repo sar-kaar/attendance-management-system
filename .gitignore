@@ -28,3 +28,13 @@ server_stderr.txt
 schema.dot
 docs/schema.png
 sqlite_mcp_server.db
+node_modules/
+dist/
+dist-ssr/
+*.local
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
