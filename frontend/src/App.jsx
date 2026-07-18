@@ -9,6 +9,9 @@ import Courses from "./pages/Courses";
 import Attendance from "./pages/Attendance";
 import FaceRecognition from "./pages/FaceRecognition";
 import StudentDashboard from "./pages/StudentDashboard";
+import Enrollments from "./pages/Enrollments";
+import AttendanceCodes from "./pages/AttendanceCodes";
+import Reports from "./pages/Reports";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -51,6 +54,9 @@ function AppRoutes() {
         <Route path="courses" element={<Courses />} />
         <Route path="attendance" element={<Attendance />} />
         <Route path="face-recognition" element={<FaceRecognition />} />
+        <Route path="enrollments" element={<Enrollments />} />
+        <Route path="attendance-codes" element={<AttendanceCodes />} />
+        <Route path="reports" element={<Reports />} />
       </Route>
 
       <Route

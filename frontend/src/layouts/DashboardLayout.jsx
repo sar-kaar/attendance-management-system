@@ -8,6 +8,9 @@ import {
   FaCamera,
   FaSignOutAlt,
   FaUserCircle,
+  FaUserPlus,
+  FaTags,
+  FaChartBar,
 } from "react-icons/fa";
 import "../styles/layout.css";
 
@@ -15,7 +18,10 @@ const navItems = [
   { to: "/dashboard", icon: <FaTachometerAlt />, label: "Dashboard", end: true },
   { to: "/dashboard/students", icon: <FaUsers />, label: "Students" },
   { to: "/dashboard/courses", icon: <FaBook />, label: "Courses" },
+  { to: "/dashboard/enrollments", icon: <FaUserPlus />, label: "Enrollments" },
   { to: "/dashboard/attendance", icon: <FaClipboardCheck />, label: "Attendance" },
+  { to: "/dashboard/attendance-codes", icon: <FaTags />, label: "Attendance Codes" },
+  { to: "/dashboard/reports", icon: <FaChartBar />, label: "Reports" },
   { to: "/dashboard/face-recognition", icon: <FaCamera />, label: "Face Recognition" },
 ];
 

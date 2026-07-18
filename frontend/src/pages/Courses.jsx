@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { courseAPI, enrollmentAPI, studentAPI } from "../services/api";
+import { courseAPI } from "../services/api";
 import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 import "../styles/table.css";
 

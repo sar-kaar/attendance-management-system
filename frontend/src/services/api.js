@@ -91,6 +91,23 @@ export const attendanceAPI = {
     api.get("/attendance/export_pdf/", { params, responseType: "blob" }),
 };
 
+export const dashboardAPI = {
+  atRisk: (params) => api.get("/dashboard/at-risk/", { params }),
+  attendanceStats: (params) => api.get("/dashboard/attendance-stats/", { params }),
+  facultyPerformance: (params) => api.get("/dashboard/faculty-performance/", { params }),
+  chronicLatecomers: (params) => api.get("/dashboard/chronic-latecomers/", { params }),
+  incompleteRecords: (params) => api.get("/dashboard/incomplete-records/", { params }),
+  masterDataImport: (data, dryRun) =>
+    api.post("/dashboard/master-data/import/", data, { params: { dry_run: dryRun } }),
+};
+
+export const attendanceCodeAPI = {
+  list: () => api.get("/attendance/codes/"),
+  create: (data) => api.post("/attendance/codes/", data),
+  update: (id, data) => api.put(`/attendance/codes/${id}/`, data),
+  delete: (id) => api.delete(`/attendance/codes/${id}/`),
+};
+
 export const faceAPI = {
   register: (formData) =>
     api.post("/face/register/", formData, {
