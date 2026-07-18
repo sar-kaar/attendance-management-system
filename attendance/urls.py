@@ -4,6 +4,7 @@ from . import views
 
 router = DefaultRouter()
 router.register('', views.AttendanceViewSet)
+router.register('codes', views.AttendanceCodeViewSet, basename='attendance-code')
 
 urlpatterns = [
     path('', include(router.urls)),
