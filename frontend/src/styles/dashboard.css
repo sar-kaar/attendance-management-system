@@ -64,6 +64,22 @@
   color: #1a1a1a;
 }
 
+.panel-subtitle {
+  font-size: 13px;
+  font-weight: 400;
+  color: #888;
+}
+
+.muted {
+  color: #999;
+  font-size: 12px;
+}
+
+.chart-wrap {
+  position: relative;
+  height: 240px;
+}
+
 .recent-panel {
   margin-top: 0;
 }

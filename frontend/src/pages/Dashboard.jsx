@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { attendanceAPI } from "../services/api";
+import { attendanceAPI, dashboardAPI } from "../services/api";
 import { FaUsers, FaBook, FaCheckCircle, FaUserTie } from "react-icons/fa";
 import { Bar, Doughnut } from "react-chartjs-2";
 import {
@@ -19,6 +19,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tool
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [atRisk, setAtRisk] = useState([]);
 
   useEffect(() => {
     attendanceAPI
@@ -26,6 +27,11 @@ export default function Dashboard() {
       .then((res) => setData(res.data))
       .catch(console.error)
       .finally(() => setLoading(false));
+
+    dashboardAPI
+      .atRisk()
+      .then((res) => setAtRisk(res.data))
+      .catch(console.error);
   }, []);
 
   if (loading) return <div className="loading">Loading dashboard...</div>;
@@ -111,15 +117,63 @@ export default function Dashboard() {
       <div className="charts-grid">
         <div className="panel">
           <h3>Attendance Comparison</h3>
-          <Bar data={barData} options={{ responsive: true, plugins: { legend: { position: "bottom" } } }} />
+          <div className="chart-wrap">
+            <Bar
+              data={barData}
+              options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } }}
+            />
+          </div>
         </div>
         <div className="panel">
           <h3>Overall Distribution</h3>
-          <Doughnut
-            data={doughnutData}
-            options={{ responsive: true, plugins: { legend: { position: "bottom" } } }}
-          />
+          <div className="chart-wrap">
+            <Doughnut
+              data={doughnutData}
+              options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } }}
+            />
+          </div>
         </div>
+      </div>
+
+      <div className="panel recent-panel">
+        <h3>At-Risk Students <span className="panel-subtitle">(below 60% attendance)</span></h3>
+        <table className="recent-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Course</th>
+              <th>Classes</th>
+              <th>Attendance %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {atRisk.slice(0, 8).map((item, i) => (
+              <tr key={i}>
+                <td>{item.student_name} <span className="muted">({item.student_code})</span></td>
+                <td>{item.course_code}</td>
+                <td>{item.present_count}/{item.total_classes}</td>
+                <td>
+                  <span
+                    className="badge"
+                    style={{
+                      background: (item.attendance_percentage <= 40 ? "#ef4444" : "#f59e0b") + "22",
+                      color: item.attendance_percentage <= 40 ? "#ef4444" : "#f59e0b",
+                    }}
+                  >
+                    {item.attendance_percentage}%
+                  </span>
+                </td>
+              </tr>
+            ))}
+            {atRisk.length === 0 && (
+              <tr>
+                <td colSpan={4} style={{ textAlign: "center", padding: 24 }}>
+                  No at-risk students
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       <div className="panel recent-panel">
