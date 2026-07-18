@@ -9,8 +9,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-from .models import Attendance
-from .serializers import AttendanceSerializer, BulkAttendanceSerializer
+from .models import Attendance, AttendanceCode
+from .serializers import AttendanceSerializer, BulkAttendanceSerializer, AttendanceCodeSerializer
 from students.models import Student
 from courses.models import Course, Enrollment
 
@@ -257,3 +257,23 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
         response['Content-Disposition'] = 'attachment; filename="attendance_report.pdf"'
         return response
+
+
+class IsAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.role == 'admin'
+
+
+class AttendanceCodeViewSet(viewsets.ModelViewSet):
+    serializer_class = AttendanceCodeSerializer
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), IsAdmin()]
+
+    def get_queryset(self):
+        qs = AttendanceCode.objects.all()
+        if self.action == 'list' and self.request.user.role != 'admin':
+            qs = qs.filter(is_active=True)
+        return qs

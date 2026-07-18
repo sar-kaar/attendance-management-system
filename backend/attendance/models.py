@@ -3,6 +3,20 @@ from students.models import Student
 from courses.models import Course
 
 
+class AttendanceCode(models.Model):
+    code = models.CharField(max_length=10, unique=True)
+    label = models.CharField(max_length=100)
+    description = models.TextField(blank=True, default='')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['code']
+
+    def __str__(self):
+        return f"{self.code} - {self.label}"
+
+
 class Attendance(models.Model):
     class Status(models.TextChoices):
         PRESENT = 'present', 'Present'

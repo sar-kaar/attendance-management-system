@@ -1,6 +1,13 @@
 from rest_framework import serializers
-from .models import Attendance
+from .models import Attendance, AttendanceCode
 from courses.models import Enrollment
+
+
+class AttendanceCodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AttendanceCode
+        fields = ['id', 'code', 'label', 'description', 'is_active', 'created_at']
+        read_only_fields = ['created_at']
 
 
 class AttendanceSerializer(serializers.ModelSerializer):
