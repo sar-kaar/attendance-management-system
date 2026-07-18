@@ -10,6 +10,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showResetInfo, setShowResetInfo] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -70,8 +71,21 @@ function Login() {
             <label>
               <input type="checkbox" />&nbsp;&nbsp;Remember Me
             </label>
-            <a href="#">Forgot Password?</a>
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => setShowResetInfo((v) => !v)}
+            >
+              Forgot Password?
+            </button>
           </div>
+
+          {showResetInfo && (
+            <div className="error-msg" style={{ background: "#eff6ff", color: "#1d4ed8" }}>
+              Self-service password reset isn't available yet — contact your administrator to
+              have your password reset.
+            </div>
+          )}
 
           <button className="login-btn" type="submit" disabled={submitting}>
             {submitting ? "Signing In..." : "Login"}
