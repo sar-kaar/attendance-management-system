@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from datetime import timedelta
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -65,8 +65,8 @@ if DATABASE_URL and DATABASE_URL.startswith('postgres'):
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': url.path[1:],
-            'USER': url.username or '',
-            'PASSWORD': url.password or '',
+            'USER': unquote(url.username or ''),
+            'PASSWORD': unquote(url.password or ''),
             'HOST': url.hostname or 'localhost',
             'PORT': url.port or '5432',
         }
