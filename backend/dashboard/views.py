@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
+from django.db import transaction
 from django.db.models import Count, Q, F, Value
 from django.db.models.functions import Coalesce
 from students.models import Student
@@ -21,14 +22,14 @@ class IsAdminOrFaculty(permissions.BasePermission):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def program_list(request):
     programs = Student.objects.filter(is_active=True).values_list('program', flat=True).distinct().order_by('program')
     return Response(ProgramSerializer([{'program': p} for p in programs if p], many=True).data)
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def section_list(request):
     program = request.query_params.get('program')
     qs = Student.objects.filter(is_active=True)
@@ -39,7 +40,7 @@ def section_list(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def student_search(request):
     search = request.query_params.get('search', '').strip()
     program = request.query_params.get('program')
@@ -60,7 +61,7 @@ def student_search(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def student_attendance_breakdown(request, student_id):
     try:
         student = Student.objects.get(id=student_id)
@@ -99,7 +100,7 @@ def student_attendance_breakdown(request, student_id):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def attendance_stats(request):
     courses = Course.objects.filter(is_active=True).select_related('faculty')
     stats = []
@@ -169,7 +170,7 @@ def attendance_stats(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def at_risk_students(request):
     threshold = float(request.query_params.get('threshold', 60))
     courses = Course.objects.filter(is_active=True)
@@ -200,7 +201,7 @@ def at_risk_students(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def faculty_performance(request):
     faculties = User.objects.filter(role='faculty', is_active=True)
     performance = []
@@ -251,7 +252,7 @@ def faculty_performance(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def chronic_latecomers(request):
     threshold = int(request.query_params.get('threshold', 3))
     courses = Course.objects.filter(is_active=True)
@@ -284,7 +285,7 @@ def chronic_latecomers(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def incomplete_records(request):
     courses = Course.objects.filter(is_active=True)
     incomplete = []
@@ -334,48 +335,51 @@ def master_data_import(request):
     skipped = 0
     errors = []
 
-    for i, record in enumerate(data):
-        try:
-            student_id = record.get('student_id')
-            course_code = record.get('course_code')
-            first_name = record.get('first_name', '')
-            last_name = record.get('last_name', '')
-            email = record.get('email', '')
-            program = record.get('program', '')
-            section = record.get('section', '')
+    with transaction.atomic():
+        for i, record in enumerate(data):
+            try:
+                student_id = record.get('student_id')
+                course_code = record.get('course_code')
+                first_name = record.get('first_name', '')
+                last_name = record.get('last_name', '')
+                email = record.get('email', '')
+                program = record.get('program', '')
+                section = record.get('section', '')
 
-            if not student_id or not course_code:
-                errors.append({'index': i, 'error': 'student_id and course_code required'})
-                skipped += 1
-                continue
+                if not student_id or not course_code:
+                    errors.append({'index': i, 'error': 'student_id and course_code required'})
+                    skipped += 1
+                    continue
 
-            course, _ = Course.objects.get_or_create(
-                code=course_code,
-                defaults={'name': record.get('course_name', course_code)},
-            )
-            student, student_created = Student.objects.update_or_create(
-                student_id=student_id,
-                defaults={
-                    'first_name': first_name,
-                    'last_name': last_name,
-                    'email': email or f"{student_id}@placeholder.com",
-                    'program': program,
-                    'section': section,
-                },
-            )
-            if student_created:
-                created += 1
-            else:
-                updated += 1
+                course, _ = Course.objects.get_or_create(
+                    code=course_code,
+                    defaults={'name': record.get('course_name', course_code)},
+                )
+                student, student_created = Student.objects.update_or_create(
+                    student_id=student_id,
+                    defaults={
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'email': email or f"{student_id}@placeholder.com",
+                        'program': program,
+                        'section': section,
+                    },
+                )
+                if student_created:
+                    created += 1
+                else:
+                    updated += 1
 
-            if not dry_run:
                 Enrollment.objects.get_or_create(
                     student=student, course=course,
                     defaults={'is_active': True},
                 )
-        except Exception as e:
-            errors.append({'index': i, 'error': str(e)})
-            skipped += 1
+            except Exception as e:
+                errors.append({'index': i, 'error': str(e)})
+                skipped += 1
+
+        if dry_run:
+            transaction.set_rollback(True)
 
     return Response({
         'created': created,
