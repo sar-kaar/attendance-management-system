@@ -1,3 +1,4 @@
+# Backend
 *.pyc
 __pycache__/
 *.pyo
@@ -6,25 +7,43 @@ db.sqlite3
 venv/
 env/
 ENV/
-.DS_Store
-*.jpg
-*.jpeg
-*.png
-!docs/*.png
-!docs/figma/*.png
+.venv/
+.venv-win/
 media/
 staticfiles/
+*.whl
+
+# Frontend
+node_modules/
+dist/
+build/
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
 *.log
+server_stdout.txt
+server_stderr.txt
+
+# Testing
 .mypy_cache/
 .pytest_cache/
 .coverage
 htmlcov/
-desktop.ini
-.venv/
-.vscode/
-*.whl
-server_stdout.txt
-server_stderr.txt
-schema.dot
+
+# Docs images
 docs/schema.png
+schema.dot
+
+# Misc
 sqlite_mcp_server.db
