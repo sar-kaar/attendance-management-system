@@ -47,3 +47,6 @@ schema.dot
 
 # Misc
 sqlite_mcp_server.db
+
+gitlabpat.txt
+.claude/settings.local.json
