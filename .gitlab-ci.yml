@@ -1,0 +1,77 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  AZURE_RESOURCE_GROUP: ams-rg
+  AZURE_WEBAPP_NAME: ams-backend
+  AZURE_STORAGE_ACCOUNT: amsfrontendweb
+
+test:
+  stage: test
+  image: python:3.11
+  variables:
+    SECRET_KEY: ci-test-secret-key-not-for-production
+    DEBUG: "True"
+    ALLOWED_HOSTS: localhost,127.0.0.1
+    CORS_ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  cache:
+    key:
+      files:
+        - backend/requirements.txt
+    paths:
+      - .cache/pip
+  before_script:
+    - cd backend
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+  script:
+    - python manage.py makemigrations --check
+    - python manage.py check
+    - python manage.py test --verbosity=2
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+build-frontend:
+  stage: build
+  image: node:20
+  script:
+    - cd frontend
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/dist
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+  needs:
+    - test
+
+deploy-backend:
+  stage: deploy
+  image: mcr.microsoft.com/azure-cli:latest
+  script:
+    - az login --service-principal -u "$AZURE_CLIENT_ID" -p "$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
+    - az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+    - python3 -c "import shutil; shutil.make_archive('backend', 'zip', 'backend')"
+    - az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src-path backend.zip --type zip
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+  needs:
+    - test
+
+deploy-frontend:
+  stage: deploy
+  image: mcr.microsoft.com/azure-cli:latest
+  script:
+    - az login --service-principal -u "$AZURE_CLIENT_ID" -p "$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
+    - az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+    - az storage blob upload-batch --account-name "$AZURE_STORAGE_ACCOUNT" --destination '$web' --source frontend/dist --auth-mode login --overwrite
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+  needs:
+    - build-frontend
