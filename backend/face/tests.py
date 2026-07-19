@@ -1,5 +1,6 @@
 import json
 import io
+import sys
 import numpy as np
 from unittest.mock import patch, MagicMock
 from django.test import TestCase, override_settings
@@ -8,6 +9,14 @@ from rest_framework.test import APIClient
 from students.models import Student
 from courses.models import Course, Enrollment
 from attendance.models import Attendance
+
+try:
+    import face_recognition  # noqa: F401
+except ImportError:
+    # face_recognition/dlib isn't installed in CI or every dev machine (heavy
+    # native build, not required since face/views.py imports it lazily at
+    # runtime). Stub it so @patch('face_recognition....') still resolves.
+    sys.modules['face_recognition'] = MagicMock()
 
 User = get_user_model()
 
