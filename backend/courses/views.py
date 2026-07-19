@@ -17,6 +17,12 @@ class CourseViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated()]
         return [permissions.IsAuthenticated(), IsAdminOrFaculty()]
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.user.role == 'faculty':
+            qs = qs.filter(faculty=self.request.user)
+        return qs
+
 
 class EnrollmentViewSet(viewsets.ModelViewSet):
     queryset = Enrollment.objects.select_related('student', 'course').all()
@@ -29,6 +35,8 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        if self.request.user.role == 'faculty':
+            qs = qs.filter(course__faculty=self.request.user)
         course_id = self.request.query_params.get('course')
         student_id = self.request.query_params.get('student')
         is_active = self.request.query_params.get('is_active')
