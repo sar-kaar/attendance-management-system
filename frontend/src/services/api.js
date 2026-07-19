@@ -92,6 +92,7 @@ export const attendanceAPI = {
 };
 
 export const dashboardAPI = {
+  searchStudents: (search) => api.get("/dashboard/students/", { params: { search } }),
   atRisk: (params) => api.get("/dashboard/at-risk/", { params }),
   attendanceStats: (params) => api.get("/dashboard/attendance-stats/", { params }),
   facultyPerformance: (params) => api.get("/dashboard/faculty-performance/", { params }),
