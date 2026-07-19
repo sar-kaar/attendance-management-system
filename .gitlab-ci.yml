@@ -58,7 +58,7 @@ deploy-backend:
   stage: deploy
   image: mcr.microsoft.com/azure-cli:latest
   script:
-    - az login --service-principal -u "$AZURE_CLIENT_ID" -p "$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
+    - az login --service-principal --username "$AZURE_CLIENT_ID" --password="$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
     - az account set --subscription "$AZURE_SUBSCRIPTION_ID"
     - python3 -c "import shutil; shutil.make_archive('backend', 'zip', 'backend')"
     - az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src-path backend.zip --type zip
@@ -71,7 +71,7 @@ deploy-frontend:
   stage: deploy
   image: mcr.microsoft.com/azure-cli:latest
   script:
-    - az login --service-principal -u "$AZURE_CLIENT_ID" -p "$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
+    - az login --service-principal --username "$AZURE_CLIENT_ID" --password="$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
     - az account set --subscription "$AZURE_SUBSCRIPTION_ID"
     - az storage blob upload-batch --account-name "$AZURE_STORAGE_ACCOUNT" --destination '$web' --source frontend/dist --auth-mode login --overwrite
   rules:
