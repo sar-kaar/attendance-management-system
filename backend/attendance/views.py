@@ -31,8 +31,12 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if self.request.user.role == 'faculty':
-            qs = qs.filter(course__faculty=self.request.user)
+        user = self.request.user
+        if user.role == 'faculty':
+            qs = qs.filter(course__faculty=user)
+        elif user.role == 'student':
+            profile = getattr(user, 'student_profile', None)
+            qs = qs.filter(student=profile) if profile else qs.none()
         course_id = self.request.query_params.get('course')
         date = self.request.query_params.get('date')
         student_id = self.request.query_params.get('student')
@@ -90,10 +94,21 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def my_attendance(self, request):
+        if request.user.role == 'student':
+            profile = getattr(request.user, 'student_profile', None)
+            if not profile:
+                return Response({'error': 'No student record is linked to this account'}, status=404)
+            qs = Attendance.objects.filter(student=profile).order_by('-date')
+            return Response(AttendanceSerializer(qs, many=True).data)
+
+        if request.user.role not in ['admin', 'faculty']:
+            return Response({'error': 'Not permitted'}, status=403)
         student_id = request.query_params.get('student_id')
         if not student_id:
             return Response({'error': 'student_id required'}, status=400)
         qs = Attendance.objects.filter(student_id=student_id).order_by('-date')
+        if request.user.role == 'faculty':
+            qs = qs.filter(course__faculty=request.user)
         return Response(AttendanceSerializer(qs, many=True).data)
 
     @action(detail=False, methods=['get'])

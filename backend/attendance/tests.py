@@ -166,7 +166,8 @@ class MyAttendanceTest(TestCase):
         )
         self.student = Student.objects.create(
             first_name='John', last_name='Doe',
-            email='john@test.com', student_id='STU001'
+            email='john@test.com', student_id='STU001',
+            user=self.user,
         )
         self.course = Course.objects.create(
             name='Software Engineering', code='CSE405'
@@ -175,14 +176,58 @@ class MyAttendanceTest(TestCase):
             student=self.student, course=self.course,
             date=date.today(), status='present'
         )
+
+        # A second student, deliberately not linked to self.user.
+        self.other_student = Student.objects.create(
+            first_name='Jane', last_name='Roe',
+            email='jane@test.com', student_id='STU002'
+        )
+        Attendance.objects.create(
+            student=self.other_student, course=self.course,
+            date=date.today(), status='absent'
+        )
+
         self.client.force_authenticate(user=self.user)
 
-    def test_my_attendance_requires_student_id(self):
+    def test_student_gets_own_records_without_student_id(self):
+        """A linked student needs no student_id — the profile resolves it."""
+        response = self.client.get('/api/attendance/my_attendance/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+    def test_student_cannot_read_another_students_records(self):
+        """student_id must be ignored for students, not honoured."""
+        response = self.client.get(
+            f'/api/attendance/my_attendance/?student_id={self.other_student.id}'
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['student'], self.student.id)
+
+    def test_unlinked_student_account_gets_404(self):
+        orphan = User.objects.create_user(
+            username='orphan', password='testpass123', role='student'
+        )
+        self.client.force_authenticate(user=orphan)
+        response = self.client.get('/api/attendance/my_attendance/')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_admin_still_requires_student_id(self):
+        admin = User.objects.create_user(
+            username='ma_admin', password='testpass123', role='admin'
+        )
+        self.client.force_authenticate(user=admin)
         response = self.client.get('/api/attendance/my_attendance/')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_my_attendance_returns_student_records(self):
-        response = self.client.get(f'/api/attendance/my_attendance/?student_id={self.student.id}')
+    def test_admin_can_read_any_student_records(self):
+        admin = User.objects.create_user(
+            username='ma_admin2', password='testpass123', role='admin'
+        )
+        self.client.force_authenticate(user=admin)
+        response = self.client.get(
+            f'/api/attendance/my_attendance/?student_id={self.other_student.id}'
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 

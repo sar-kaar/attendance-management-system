@@ -19,8 +19,12 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if self.request.user.role == 'faculty':
-            qs = qs.filter(faculty=self.request.user)
+        user = self.request.user
+        if user.role == 'faculty':
+            qs = qs.filter(faculty=user)
+        elif user.role == 'student':
+            profile = getattr(user, 'student_profile', None)
+            qs = qs.filter(enrollments__student=profile).distinct() if profile else qs.none()
         return qs
 
 
@@ -35,8 +39,12 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if self.request.user.role == 'faculty':
-            qs = qs.filter(course__faculty=self.request.user)
+        user = self.request.user
+        if user.role == 'faculty':
+            qs = qs.filter(course__faculty=user)
+        elif user.role == 'student':
+            profile = getattr(user, 'student_profile', None)
+            qs = qs.filter(student=profile) if profile else qs.none()
         course_id = self.request.query_params.get('course')
         student_id = self.request.query_params.get('student')
         is_active = self.request.query_params.get('is_active')
