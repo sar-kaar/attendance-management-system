@@ -143,16 +143,22 @@ Branch used: `feature/US-05-enrollment-decision` (pulled forward from its Week 4
 
 Migrations verified: `0002_enrollment` and `0003_backfill_enrollment` both applied successfully (Jul 10). `AttendanceSerializer.validate()` now enforces enrollment on create/update, and `mark_bulk` skips non-enrolled students (returns them in a `skipped` list) instead of failing the whole batch or silently marking them. Added Jul 10 (Day 4).
 
-## Build Requirements — dlib (added Jul 10)
-`dlib` (required by `face_recognition`) compiles from C++ source on install — plain `pip install dlib` fails without build tools.
+## Build Requirements — dlib (updated Jul 19)
+`dlib` (required by `face_recognition`) compiles from C++ source on `pip install dlib` — fails without build tools, and is NOT in `requirements.txt` (deliberately excluded from CI/production; `face/views.py` imports it lazily so the app runs fine without it).
 
-Windows setup before `pip install -r requirements.txt`:
-- Install **CMake** (add to PATH during install)
-- Install **Visual Studio Build Tools** with "Desktop development with C++" workload
+**Windows — recommended (no CMake/Visual Studio needed):**
+```powershell
+pip install dlib-bin              # prebuilt wheel, provides the `dlib` module
+pip install face_recognition_models
+pip install --no-deps face_recognition   # --no-deps: its declared "dlib" dep would try to build from source otherwise
+```
+Verify: `python -c "import dlib, face_recognition; print('ok')"`
+
+**Alternative (build from source):** install CMake (add to PATH) + Visual Studio Build Tools ("Desktop development with C++" workload), then plain `pip install dlib face_recognition`. Slower, more failure-prone — only needed if `dlib-bin` doesn't have a wheel for your Python version.
 
 macOS: `brew install cmake` first. Linux: `sudo apt install cmake build-essential`.
 
-No face-detection code exists in the repo yet (US-07, issue #3, not started) — libs installed ahead of implementation.
+Face registration/recognition endpoints exist and work (`face` app, `/api/face/*`) — this section only matters for running them **locally**; they're not required for the rest of the app to run.
 
 ## Frontend
 No frontend code exists in the repo yet. Ekata has initialized a React + Vite + MUI project locally with wireframes for login, register, dashboard, student management, and attendance marking screens.
