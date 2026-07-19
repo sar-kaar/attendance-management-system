@@ -50,3 +50,6 @@ sqlite_mcp_server.db
 
 gitlabpat.txt
 .claude/settings.local.json
+
+# Serena project index / memories (machine-local)
+.serena/
