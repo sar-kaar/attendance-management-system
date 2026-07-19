@@ -1,4 +1,5 @@
 import json
+import logging
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -6,6 +7,13 @@ from django.utils import timezone
 from students.models import Student
 from courses.models import Enrollment
 from attendance.models import Attendance
+
+logger = logging.getLogger(__name__)
+
+
+class FaceProcessingError(Exception):
+    """Raised when an image can't be processed due to a real error (missing
+    library, corrupt upload, etc.) as opposed to simply finding no face."""
 
 
 def _decode_face_encoding(encoding_str):
@@ -16,19 +24,34 @@ def _decode_face_encoding(encoding_str):
 
 
 def _encode_image(image_file):
+    import io
+
     try:
-        import io
-        import numpy as np
         import face_recognition
+    except ImportError:
+        logger.exception('face_recognition library is not available')
+        raise FaceProcessingError(
+            'Face recognition is not available on the server right now.'
+        )
+
+    try:
         image_bytes = image_file.read()
-        image_array = np.frombuffer(image_bytes, dtype=np.uint8)
         image = face_recognition.load_image_file(io.BytesIO(image_bytes))
-        encodings = face_recognition.face_encodings(image)
-        if not encodings:
-            return None
-        return encodings[0]
     except Exception:
+        logger.exception('Failed to decode uploaded image')
+        raise FaceProcessingError(
+            'Could not read the uploaded image. Please upload a valid JPEG/PNG photo.'
+        )
+
+    try:
+        encodings = face_recognition.face_encodings(image)
+    except Exception:
+        logger.exception('face_recognition failed while processing image')
+        raise FaceProcessingError('Failed to process the image for face detection.')
+
+    if not encodings:
         return None
+    return encodings[0]
 
 
 @api_view(['POST'])
@@ -51,7 +74,11 @@ def register_face(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    encoding = _encode_image(image)
+    try:
+        encoding = _encode_image(image)
+    except FaceProcessingError as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     if encoding is None:
         return Response(
             {'error': 'No face detected in the image. Please upload a clear photo with a visible face.'},
@@ -80,7 +107,11 @@ def recognize_face(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    unknown_encoding = _encode_image(image)
+    try:
+        unknown_encoding = _encode_image(image)
+    except FaceProcessingError as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     if unknown_encoding is None:
         return Response(
             {'error': 'No face detected in the image'},
@@ -149,7 +180,17 @@ def mark_attendance_by_face(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    unknown_encoding = _encode_image(image)
+    if request.user.role == 'faculty' and course.faculty_id != request.user.id:
+        return Response(
+            {'error': 'You are not assigned to this course'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    try:
+        unknown_encoding = _encode_image(image)
+    except FaceProcessingError as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     if unknown_encoding is None:
         return Response(
             {'error': 'No face detected in the image'},

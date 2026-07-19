@@ -10,3 +10,14 @@ reportlab>=4.0,<6.0
 gunicorn>=22.0,<23.0
 whitenoise>=6.5,<7.0
 psycopg2-binary>=2.9,<3.0
+
+# face_recognition depends on plain "dlib", which has no prebuilt wheels and
+# fails to build without cmake/a C++ compiler. dlib-bin ships prebuilt
+# binaries under the same "dlib" import name, so we install it here and
+# its actual runtime deps below, then install face-recognition itself with
+# `pip install --no-deps face-recognition==1.3.0` (see .gitlab-ci.yml) —
+# NOT as a normal line here, since that would make pip also try to build
+# plain "dlib" from source even with dlib-bin already present.
+dlib-bin>=20.0,<21.0
+face-recognition-models>=0.3,<1.0
+click>=8.0,<9.0
