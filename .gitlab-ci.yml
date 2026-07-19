@@ -62,7 +62,11 @@ deploy-backend:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password="$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
     - az account set --subscription "$AZURE_SUBSCRIPTION_ID"
     - python3 -c "import shutil; shutil.make_archive('backend', 'zip', 'backend')"
-    - az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src-path backend.zip --type zip
+    # --timeout is in milliseconds. Oryx rebuilds numpy/pandas/dlib-bin on the
+    # B1 instance on every deploy (~5.5 min); the CLI default gives up sooner and
+    # reports HTTP 504 even though the deployment goes on to succeed server-side.
+    # 15 min leaves headroom so a red job means a real failure.
+    - az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src-path backend.zip --type zip --timeout 900000
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   needs:

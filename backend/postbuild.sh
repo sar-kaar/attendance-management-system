@@ -6,3 +6,7 @@ set -e
 # so install face-recognition itself with --no-deps to avoid pip re-triggering
 # a source build of plain dlib.
 pip install --no-deps face-recognition==1.3.0
+
+# Do NOT add migrate/collectstatic here. The App Service startup command
+# (az webapp config show --query appCommandLine) already runs both before
+# gunicorn on every container start. Duplicating them would just slow deploys.
