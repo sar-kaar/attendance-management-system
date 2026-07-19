@@ -11,6 +11,11 @@ from attendance.models import Attendance
 logger = logging.getLogger(__name__)
 
 
+class IsAdminOrFaculty(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.role in ['admin', 'faculty'])
+
+
 class FaceProcessingError(Exception):
     """Raised when an image can't be processed due to a real error (missing
     library, corrupt upload, etc.) as opposed to simply finding no face."""
@@ -55,7 +60,7 @@ def _encode_image(image_file):
 
 
 @api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def register_face(request):
     student_id = request.data.get('student_id')
     image = request.FILES.get('image')
@@ -96,7 +101,7 @@ def register_face(request):
 
 
 @api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def recognize_face(request):
     image = request.FILES.get('image')
     tolerance = float(request.data.get('tolerance', 0.6))
@@ -158,7 +163,7 @@ def recognize_face(request):
 
 
 @api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def mark_attendance_by_face(request):
     course_id = request.data.get('course_id')
     image = request.FILES.get('image')
@@ -255,7 +260,7 @@ def mark_attendance_by_face(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def registered_faces(request):
     students = Student.objects.exclude(face_encoding__isnull=True).exclude(face_encoding='')
     data = [

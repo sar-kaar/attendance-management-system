@@ -31,6 +31,12 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        user = self.request.user
+        if user.role == 'faculty':
+            qs = qs.filter(course__faculty=user)
+        elif user.role == 'student':
+            profile = getattr(user, 'student_profile', None)
+            qs = qs.filter(student=profile) if profile else qs.none()
         course_id = self.request.query_params.get('course')
         date = self.request.query_params.get('date')
         student_id = self.request.query_params.get('student')
@@ -48,6 +54,8 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         course = Course.objects.get(id=data['course_id'])
+        if request.user.role == 'faculty' and course.faculty_id != request.user.id:
+            return Response({'error': 'You are not assigned to this course'}, status=403)
 
         enrolled_students = {
             e.student.student_id: e.student
@@ -86,10 +94,21 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def my_attendance(self, request):
+        if request.user.role == 'student':
+            profile = getattr(request.user, 'student_profile', None)
+            if not profile:
+                return Response({'error': 'No student record is linked to this account'}, status=404)
+            qs = Attendance.objects.filter(student=profile).order_by('-date')
+            return Response(AttendanceSerializer(qs, many=True).data)
+
+        if request.user.role not in ['admin', 'faculty']:
+            return Response({'error': 'Not permitted'}, status=403)
         student_id = request.query_params.get('student_id')
         if not student_id:
             return Response({'error': 'student_id required'}, status=400)
         qs = Attendance.objects.filter(student_id=student_id).order_by('-date')
+        if request.user.role == 'faculty':
+            qs = qs.filter(course__faculty=request.user)
         return Response(AttendanceSerializer(qs, many=True).data)
 
     @action(detail=False, methods=['get'])
@@ -117,20 +136,29 @@ class AttendanceViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def dashboard(self, request):
         today = timezone.now().date()
-        total_students = Student.objects.filter(is_active=True).count()
-        total_courses = Course.objects.filter(is_active=True).count()
-        today_attendance = Attendance.objects.filter(date=today)
+        courses_qs = Course.objects.filter(is_active=True)
+        attendance_qs = Attendance.objects.all()
+        if request.user.role == 'faculty':
+            courses_qs = courses_qs.filter(faculty=request.user)
+            attendance_qs = attendance_qs.filter(course__faculty=request.user)
+            total_students = Student.objects.filter(
+                is_active=True, enrollments__course__faculty=request.user
+            ).distinct().count()
+        else:
+            total_students = Student.objects.filter(is_active=True).count()
+        total_courses = courses_qs.count()
+        today_attendance = attendance_qs.filter(date=today)
         today_present = today_attendance.filter(status='present').count() + today_attendance.filter(status='late').count()
         today_absent = today_attendance.filter(status='absent').count()
         today_total = today_attendance.count()
         today_pct = round((today_present / today_total * 100), 1) if today_total > 0 else 0
 
-        total_records = Attendance.objects.count()
-        overall_present = Attendance.objects.filter(status='present').count() + Attendance.objects.filter(status='late').count()
-        overall_absent = Attendance.objects.filter(status='absent').count()
+        total_records = attendance_qs.count()
+        overall_present = attendance_qs.filter(status='present').count() + attendance_qs.filter(status='late').count()
+        overall_absent = attendance_qs.filter(status='absent').count()
         overall_pct = round((overall_present / total_records * 100), 1) if total_records > 0 else 0
 
-        recent = Attendance.objects.select_related('student', 'course').order_by('-date', '-created_at')[:10]
+        recent = attendance_qs.select_related('student', 'course').order_by('-date', '-created_at')[:10]
 
         return Response({
             'total_students': total_students,

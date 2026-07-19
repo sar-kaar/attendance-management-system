@@ -390,11 +390,41 @@ export default function FaceRecognition() {
                       : "#fee2e2",
                 }}
               >
-                {result.message && <p>{result.message}</p>}
+                {result.message && <p style={{ margin: 0 }}>{result.message}</p>}
                 {result.data && (
-                  <pre style={{ fontSize: 13, whiteSpace: "pre-wrap" }}>
-                    {JSON.stringify(result.data, null, 2)}
-                  </pre>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {result.data.matched === false ? (
+                      <p style={{ margin: 0 }}>
+                        No matching face found. Try again, or register this student first.
+                      </p>
+                    ) : (
+                      <>
+                        <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
+                          {result.data.student_name}{" "}
+                          <span style={{ fontWeight: 400, color: "#555" }}>
+                            ({result.data.student_id})
+                          </span>
+                        </p>
+                        {typeof result.data.confidence === "number" && (
+                          <p style={{ margin: 0, color: "#555" }}>
+                            Match confidence: {(result.data.confidence * 100).toFixed(1)}%
+                          </p>
+                        )}
+                        {activeTab === "mark" && (
+                          <p style={{ margin: 0 }}>
+                            {result.data.marked ? (
+                              <>
+                                Attendance marked as <strong>{result.data.attendance_status}</strong>
+                                {result.data.new_record === false && " — already recorded for today"}
+                              </>
+                            ) : (
+                              result.data.message || "Attendance was not marked."
+                            )}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             )}

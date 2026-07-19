@@ -21,6 +21,11 @@ class IsAdminOrFaculty(permissions.BasePermission):
         return request.user.role in ['admin', 'faculty']
 
 
+class IsAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == 'admin'
+
+
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def program_list(request):
@@ -46,6 +51,8 @@ def student_search(request):
     program = request.query_params.get('program')
     section = request.query_params.get('section')
     qs = Student.objects.filter(is_active=True)
+    if request.user.role == 'faculty':
+        qs = qs.filter(enrollments__course__faculty=request.user).distinct()
     if search:
         qs = qs.filter(
             Q(first_name__icontains=search) |
@@ -69,6 +76,10 @@ def student_attendance_breakdown(request, student_id):
         return Response({'error': 'Student not found'}, status=404)
 
     enrollments = Enrollment.objects.filter(student=student, is_active=True).select_related('course')
+    if request.user.role == 'faculty':
+        enrollments = enrollments.filter(course__faculty=request.user)
+        if not enrollments.exists():
+            return Response({'error': 'Student not found'}, status=404)
     courses_data = []
     for enrollment in enrollments:
         attendances = Attendance.objects.filter(student=student, course=enrollment.course)
@@ -103,6 +114,8 @@ def student_attendance_breakdown(request, student_id):
 @permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def attendance_stats(request):
     courses = Course.objects.filter(is_active=True).select_related('faculty')
+    if request.user.role == 'faculty':
+        courses = courses.filter(faculty=request.user)
     stats = []
     for course in courses:
         enrollments = Enrollment.objects.filter(course=course, is_active=True)
@@ -174,6 +187,8 @@ def attendance_stats(request):
 def at_risk_students(request):
     threshold = float(request.query_params.get('threshold', 60))
     courses = Course.objects.filter(is_active=True)
+    if request.user.role == 'faculty':
+        courses = courses.filter(faculty=request.user)
     at_risk = []
     for course in courses:
         enrollments = Enrollment.objects.filter(course=course, is_active=True).select_related('student')
@@ -204,6 +219,8 @@ def at_risk_students(request):
 @permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def faculty_performance(request):
     faculties = User.objects.filter(role='faculty', is_active=True)
+    if request.user.role == 'faculty':
+        faculties = faculties.filter(id=request.user.id)
     performance = []
     for faculty in faculties:
         courses = Course.objects.filter(faculty=faculty, is_active=True)
@@ -256,6 +273,8 @@ def faculty_performance(request):
 def chronic_latecomers(request):
     threshold = int(request.query_params.get('threshold', 3))
     courses = Course.objects.filter(is_active=True)
+    if request.user.role == 'faculty':
+        courses = courses.filter(faculty=request.user)
     latecomers = []
     for course in courses:
         enrollments = Enrollment.objects.filter(course=course, is_active=True).select_related('student')
@@ -288,6 +307,8 @@ def chronic_latecomers(request):
 @permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def incomplete_records(request):
     courses = Course.objects.filter(is_active=True)
+    if request.user.role == 'faculty':
+        courses = courses.filter(faculty=request.user)
     incomplete = []
     for course in courses:
         enrollments = Enrollment.objects.filter(course=course, is_active=True)
@@ -323,7 +344,7 @@ def incomplete_records(request):
 
 
 @api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
+@permission_classes([permissions.IsAuthenticated, IsAdmin])
 def master_data_import(request):
     dry_run = request.query_params.get('dry_run', 'false').lower() == 'true'
     data = request.data
