@@ -7,4 +7,6 @@ for venv in antenv venv .venv env; do
         break
     fi
 done
+python manage.py migrate --noinput
+python manage.py collectstatic --noinput
 exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --timeout 120
