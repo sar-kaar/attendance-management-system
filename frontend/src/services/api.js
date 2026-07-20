@@ -49,6 +49,22 @@ export const authAPI = {
   me: () => api.get("/auth/me/"),
 };
 
+// The OTP itself is never sent to the browser - we only ask the server to mail
+// one, then hand back whatever the user typed for the server to judge.
+export const otpAPI = {
+  send: (email, purpose = "email_verification") =>
+    api.post("/auth/otp/send/", { email, purpose }),
+  verify: (email, code, purpose = "email_verification") =>
+    api.post("/auth/otp/verify/", { email, code, purpose }),
+};
+
+// The provider token is posted straight to our backend, which validates it
+// against Google/Facebook before issuing our own JWTs.
+export const socialAPI = {
+  google: (token) => api.post("/auth/google/", { token }),
+  facebook: (token) => api.post("/auth/facebook/", { token }),
+};
+
 export const studentAPI = {
   list: (params) => api.get("/students/", { params }),
   get: (id) => api.get(`/students/${id}/`),

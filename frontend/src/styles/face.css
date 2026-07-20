@@ -1,0 +1,94 @@
+/* Face Recognition capture panel.
+
+   Everything used to stack in one column: student picker, mode buttons, then a
+   full-width webcam feed. That pushed the capture button past the fold on
+   normal laptop screens while the right half of the card stayed empty. The
+   controls now sit on the left and the preview on the right, and the video is
+   height-capped so the pair always fits one screen. */
+
+.capture-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+  margin-top: 16px;
+}
+
+.capture-controls {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.capture-preview {
+  min-width: 0;
+}
+
+.mode-switch {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.camera-panel {
+  max-width: 100%;
+}
+
+.camera-view {
+  display: block;
+  width: 100%;
+  /* Two caps: the viewport-relative one keeps the controls below it on screen,
+     the pixel one stops the feed ballooning on very tall monitors. */
+  max-height: min(52vh, 420px);
+  /* cover, not contain: fills the frame with no letterboxing, and a centred
+     face is what survives the crop. */
+  object-fit: cover;
+  border-radius: 10px;
+  background: #111827;
+  aspect-ratio: 4 / 3;
+}
+
+.camera-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.camera-error {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.upload-panel {
+  display: flex;
+  align-items: flex-start;
+}
+
+/* Below the two-column breakpoint everything returns to a single column, so
+   the preview must not eat the whole screen. */
+@media (max-width: 1023px) {
+  .capture-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .camera-view {
+    max-height: min(40vh, 320px);
+  }
+
+  .mode-switch {
+    margin-top: 14px;
+  }
+}
+
+@media (max-height: 780px) {
+  .camera-view {
+    max-height: min(44vh, 330px);
+  }
+}

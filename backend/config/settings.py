@@ -137,6 +137,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'otp_send': config('THROTTLE_OTP_SEND', default='5/hour'),
         'otp_verify': config('THROTTLE_OTP_VERIFY', default='20/hour'),
+        'social_login': config('THROTTLE_SOCIAL_LOGIN', default='30/hour'),
     },
 }
 
@@ -158,3 +159,10 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='AMS <noreply@ams-back
 # OTP Settings
 OTP_EXPIRY_MINUTES = config('OTP_EXPIRY_MINUTES', default=10, cast=int)
 OTP_RESEND_COOLDOWN_SECONDS = config('OTP_RESEND_COOLDOWN_SECONDS', default=60, cast=int)
+
+# Social sign-in. GOOGLE_CLIENT_ID is also exposed to the browser (it is public
+# by design and needed to open the Google prompt); the secrets below never are.
+GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
+GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET', default='')
+FACEBOOK_APP_ID = config('FACEBOOK_APP_ID', default='')
+FACEBOOK_APP_SECRET = config('FACEBOOK_APP_SECRET', default='')

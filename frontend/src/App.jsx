@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import VerifyEmail from "./pages/VerifyEmail";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
@@ -38,6 +40,7 @@ function AppRoutes() {
         element={user ? <Navigate to={user.role === "student" ? "/student" : "/dashboard"} /> : <Login />}
       />
       <Route path="/register" element={<Register />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
 
       <Route
         path="/dashboard"
@@ -78,9 +81,13 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      {/* Outside AuthProvider so notifications survive auth state changes
+          (e.g. a toast raised while logging out). */}
+      <NotificationProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </NotificationProvider>
     </BrowserRouter>
   );
 }

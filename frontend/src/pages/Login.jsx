@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FaUser, FaLock } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
+import SocialLogin from "../components/SocialLogin";
 import "../styles/login.css";
 import logo from "../assets/MIT LOGO.png";
 
@@ -11,25 +12,31 @@ function Login() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showResetInfo, setShowResetInfo] = useState(false);
-  const { login } = useAuth();
+  const { login, loginWithTokens } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Set by the verify-email screen after a successful verification.
+  const [notice] = useState(location.state?.message || "");
+
+  const goHome = (user) =>
+    navigate(user.role === "student" ? "/student" : "/dashboard");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSubmitting(true);
     try {
-      const user = await login(username, password);
-      if (user.role === "student") {
-        navigate("/student");
-      } else {
-        navigate("/dashboard");
-      }
+      goHome(await login(username, password));
     } catch (err) {
       setError(err.response?.data?.detail || "Invalid credentials");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSocialSuccess = (data) => {
+    setError("");
+    goHome(loginWithTokens(data));
   };
 
   return (
@@ -43,6 +50,11 @@ function Login() {
         </div>
 
         {error && <div className="error-msg">{error}</div>}
+        {notice && (
+          <div className="error-msg" style={{ background: "#ecfdf5", color: "#047857" }}>
+            {notice}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="input-box">
@@ -91,6 +103,8 @@ function Login() {
             {submitting ? "Signing In..." : "Login"}
           </button>
         </form>
+
+        <SocialLogin onSuccess={handleSocialSuccess} onError={setError} />
 
         <div className="register">
           Don't have an account?<a href="/register"> Register</a>

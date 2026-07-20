@@ -32,6 +32,15 @@ export function AuthProvider({ children }) {
     return userRes.data;
   };
 
+  // The social endpoints already return our JWT pair plus the user, so there
+  // is no second round-trip to /me here.
+  const loginWithTokens = ({ access, refresh, user: profile }) => {
+    localStorage.setItem("access_token", access);
+    localStorage.setItem("refresh_token", refresh);
+    setUser(profile);
+    return profile;
+  };
+
   const logout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
@@ -39,7 +48,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, loginWithTokens, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

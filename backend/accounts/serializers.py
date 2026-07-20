@@ -95,3 +95,9 @@ class OTPVerifySerializer(serializers.Serializer):
     email = serializers.EmailField()
     code = serializers.CharField(max_length=6, min_length=6)
     purpose = serializers.ChoiceField(choices=OTP.Purpose.choices)
+
+
+class SocialTokenSerializer(serializers.Serializer):
+    """Carries a provider credential inward only - it is never serialized back."""
+
+    token = serializers.CharField(trim_whitespace=True)

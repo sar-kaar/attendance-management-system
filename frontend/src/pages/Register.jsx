@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUser, FaLock, FaEnvelope, FaPhone } from "react-icons/fa";
-import { authAPI } from "../services/api";
+import { authAPI, otpAPI } from "../services/api";
 import "../styles/login.css";
 import logo from "../assets/MIT LOGO.png";
 
@@ -28,7 +28,15 @@ function Register() {
     setSubmitting(true);
     try {
       await authAPI.register(form);
-      navigate("/login");
+      // The account exists at this point, so a failure to send the code must
+      // not strand the user on the register form - send them to the verify
+      // screen either way, where they can resend.
+      try {
+        await otpAPI.send(form.email);
+      } catch {
+        /* the verify screen offers a resend */
+      }
+      navigate("/verify-email", { state: { email: form.email } });
     } catch (err) {
       const data = err.response?.data;
       if (data) {

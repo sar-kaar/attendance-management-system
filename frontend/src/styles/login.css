@@ -1,232 +1,312 @@
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:'Segoe UI',sans-serif;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
 }
 
-body{
-background:#eef8ff;
+body {
+  background: #eef8ff;
 }
 
-.login-container{
-width:100%;
-height:100vh;
-display:flex;
-justify-content:center;
-align-items:center;
-background:linear-gradient(135deg,#d9d8b4,#d9d8b4,#d9d8b4);
+/* min-height, not height: if a viewport is ever shorter than the card the page
+   can still scroll rather than clipping the bottom of the form. */
+.login-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #d9d8b4, #d9d8b4, #d9d8b4);
 }
 
-.login-card{
-
-width:430px;
-
-background:white;
-
-padding:40px;
-
-border-radius:20px;
-
-box-shadow:0px 15px 40px rgba(0,0,0,.20);
-
-text-align:center;
-
+.login-card {
+  width: 400px;
+  max-width: 100%;
+  background: white;
+  padding: 26px 32px;
+  border-radius: 20px;
+  box-shadow: 0px 15px 40px rgba(0, 0, 0, .20);
+  text-align: center;
 }
 
-.logo-section{
-
-margin-bottom:30px;
-
+.logo-section {
+  margin-bottom: 16px;
 }
 
-.college-logo{
-
-width:100px;
-
-height:100px;
-
-object-fit:contain;
-
-margin-bottom:15px;
-
+.college-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  margin-bottom: 8px;
 }
 
-.logo-section h1{
-
-font-size:28px;
-
-color:#0277bd;
-
-margin-bottom:8px;
-
+.logo-section h1 {
+  font-size: 21px;
+  line-height: 1.25;
+  color: #0277bd;
+  margin-bottom: 4px;
 }
 
-.logo-section h3{
-
-font-size:16px;
-
-color:#0288d1;
-
-font-weight:500;
-
-margin-bottom:8px;
-
+.logo-section h3 {
+  font-size: 13px;
+  color: #0288d1;
+  font-weight: 500;
+  margin-bottom: 3px;
 }
 
-.logo-section p{
-
-color:#666;
-
-font-size:15px;
-
+.logo-section p {
+  color: #666;
+  font-size: 12.5px;
 }
 
-.input-box{
-
-position:relative;
-
-margin-bottom:20px;
-
+.input-box {
+  position: relative;
+  margin-bottom: 12px;
 }
 
-.icon{
-
-position:absolute;
-
-top:17px;
-
-left:15px;
-
-color:#03a9f4;
-
+.icon {
+  position: absolute;
+  top: 13px;
+  left: 15px;
+  color: #03a9f4;
 }
 
-.input-box input{
-
-width:100%;
-
-padding:15px 15px 15px 45px;
-
-border:1px solid #b3e5fc;
-
-border-radius:10px;
-
-outline:none;
-
-font-size:15px;
-
-transition:.3s;
-
+.input-box input {
+  width: 100%;
+  padding: 11px 15px 11px 45px;
+  border: 1px solid #b3e5fc;
+  border-radius: 10px;
+  outline: none;
+  font-size: 14.5px;
+  transition: .3s;
 }
 
-.input-box input:focus{
-
-border:2px solid #03a9f4;
-
+.input-box input:focus {
+  border: 2px solid #03a9f4;
 }
 
-.options{
-
-display:flex;
-
-justify-content:space-between;
-
-align-items:center;
-
-margin-bottom:25px;
-
-font-size:14px;
-
+.input-box input:disabled {
+  background: #f8fafc;
+  color: #64748b;
 }
 
-.options a{
+.options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
 
-text-decoration:none;
-
-color:#0288d1;
-
+.options a {
+  text-decoration: none;
+  color: #0288d1;
 }
 
 .link-btn {
   background: none;
   border: none;
   padding: 0;
-  font-size: 14px;
+  font-size: 13px;
   text-decoration: none;
   color: #0288d1;
   cursor: pointer;
 }
 
-.login-btn{
-
-width:100%;
-
-padding:15px;
-
-border:none;
-
-border-radius:10px;
-
-background:linear-gradient(90deg,#29b6f6,#0288d1);
-
-color:white;
-
-font-size:17px;
-
-cursor:pointer;
-
-transition:.3s;
-
+.link-btn:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
 }
 
-.login-btn:hover{
-
-transform:translateY(-2px);
-
-background:linear-gradient(90deg,#60bef1,#2c6795);
-
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #29b6f6, #0288d1);
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: .3s;
 }
 
-.register{
-
-margin-top:25px;
-
-font-size:15px;
-
+.login-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: linear-gradient(90deg, #60bef1, #2c6795);
 }
 
-.register a{
-
-text-decoration:none;
-
-font-weight:bold;
-
-color:#2c6795;
-
+.login-btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
 }
 
-@media(max-width:500px){
-
-.login-card{
-
-width:90%;
-
-padding:25px;
-
+.error-msg {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 12px;
+  text-align: left;
 }
 
-.logo-section h1{
-
-font-size:22px;
-
+.register {
+  margin-top: 14px;
+  font-size: 13.5px;
 }
 
-.logo-section h3{
-
-font-size:14px;
-
+.register a {
+  text-decoration: none;
+  font-weight: bold;
+  color: #2c6795;
 }
 
+/* ---- Social sign-in ---- */
+
+.social-login {
+  margin-top: 12px;
 }
 
+.social-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.social-divider::before,
+.social-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+/* Both providers share one compact row, so adding sign-in options costs a
+   single 32px band instead of two full-width buttons.
+   32px matches Google's "medium" icon button, which is the size we can't
+   choose freely - the Facebook button is matched to it rather than the other
+   way round. It clears the WCAG 2.5.8 (AA) 24px minimum target with room to
+   spare; the 14px gap keeps the two hit areas from crowding each other. */
+.social-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  min-height: 32px;
+}
+
+/* Google injects its own markup here and sizes it against its own presets, so
+   the slot only centres what they give us; the Facebook button is matched to
+   Google's 32px "medium" rather than the other way round. */
+.social-icon-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Undo this file's global border-box reset inside Google's subtree. Their logo
+   sits in a 16x16 box with 8px padding, which under border-box leaves zero
+   content width and the "G" silently renders at 0x0 - a blank circle. Google
+   builds against the default content-box, so restore it just for them. */
+.social-icon-slot *,
+.social-icon-slot *::before,
+.social-icon-slot *::after {
+  box-sizing: content-box;
+}
+
+.social-icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .15s ease, filter .15s ease;
+}
+
+.social-icon-btn:focus-visible {
+  outline: 2px solid #0288d1;
+  outline-offset: 2px;
+}
+
+.social-icon-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.social-icon-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.social-icon-btn.facebook {
+  background: #1877f2;
+}
+
+.social-busy,
+.social-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Short/landscape viewports: trade the logo and sub-headings for fit, since
+   the form itself is what the user came for. */
+@media (max-height: 700px) {
+  .college-logo {
+    width: 46px;
+    height: 46px;
+    margin-bottom: 5px;
+  }
+
+  .logo-section {
+    margin-bottom: 11px;
+  }
+
+  .logo-section h1 {
+    font-size: 18px;
+  }
+
+  .logo-section h3,
+  .logo-section p {
+    display: none;
+  }
+
+  .input-box {
+    margin-bottom: 9px;
+  }
+
+  .login-card {
+    padding: 18px 26px;
+  }
+}
+
+@media (max-width: 500px) {
+  .login-card {
+    width: 100%;
+    padding: 22px 20px;
+  }
+
+  .logo-section h1 {
+    font-size: 19px;
+  }
+
+  .social-row {
+    gap: 18px;
+  }
+}

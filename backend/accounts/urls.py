@@ -13,5 +13,7 @@ urlpatterns = [
     path('me/', views.UserDetailView.as_view(), name='user_detail'),
     path('otp/send/', views.OTPSendView.as_view(), name='otp_send'),
     path('otp/verify/', views.OTPVerifyView.as_view(), name='otp_verify'),
+    path('google/', views.GoogleLoginView.as_view(), name='google_login'),
+    path('facebook/', views.FacebookLoginView.as_view(), name='facebook_login'),
     path('', include(router.urls)),
 ]

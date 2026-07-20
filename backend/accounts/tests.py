@@ -1,3 +1,4 @@
+from unittest.mock import patch
 from django.test import TestCase, override_settings
 from django.core.cache import cache
 from rest_framework.test import APIClient
@@ -5,6 +6,7 @@ from rest_framework import status
 from django.core import mail
 from .models import User, OTP
 from .services import OTPService
+from .social import SocialAuthError, verify_google_token, verify_facebook_token
 
 
 class RegistrationTest(TestCase):
@@ -207,6 +209,116 @@ class OTPTest(TestCase):
         success, message = OTPService.verify_otp('test@example.com', '000000', 'email_verification')
         self.assertFalse(success)
         self.assertIn('Maximum attempts', message)
+
+
+class SocialLoginTest(TestCase):
+    """The provider call itself is patched; what these cover is that we only
+    trust a verified result, and what we do with it afterwards."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.google_url = '/api/auth/google/'
+        self.facebook_url = '/api/auth/facebook/'
+        cache.clear()
+
+    GOOGLE_PROFILE = {'email': 'newuser@mitnepal.edu.np',
+                      'first_name': 'New', 'last_name': 'User'}
+
+    @patch('accounts.views.verify_google_token')
+    def test_google_login_creates_user_and_returns_jwt(self, mock_verify):
+        mock_verify.return_value = self.GOOGLE_PROFILE
+        resp = self.client.post(self.google_url, {'token': 'valid-google-token'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn('access', resp.data)
+        self.assertIn('refresh', resp.data)
+        self.assertTrue(resp.data['created'])
+        user = User.objects.get(email='newuser@mitnepal.edu.np')
+        self.assertEqual(user.role, 'student')
+        # Provider-only accounts must not be reachable by password.
+        self.assertFalse(user.has_usable_password())
+
+    @patch('accounts.views.verify_google_token')
+    def test_google_login_reuses_existing_account_by_email(self, mock_verify):
+        existing = User.objects.create_user(
+            username='existing', email='newuser@mitnepal.edu.np',
+            password='test1234', role='faculty')
+        mock_verify.return_value = self.GOOGLE_PROFILE
+        resp = self.client.post(self.google_url, {'token': 'valid-google-token'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertFalse(resp.data['created'])
+        self.assertEqual(User.objects.filter(email='newuser@mitnepal.edu.np').count(), 1)
+        # An existing role must survive a social sign-in.
+        existing.refresh_from_db()
+        self.assertEqual(existing.role, 'faculty')
+
+    @patch('accounts.views.verify_google_token')
+    def test_google_login_rejects_unverified_token(self, mock_verify):
+        mock_verify.side_effect = SocialAuthError('Google sign-in failed verification.')
+        resp = self.client.post(self.google_url, {'token': 'forged'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('error', resp.data)
+        self.assertEqual(User.objects.count(), 0)
+
+    def test_google_login_requires_token(self):
+        resp = self.client.post(self.google_url, {})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch('accounts.views.verify_facebook_token')
+    def test_facebook_login_creates_user(self, mock_verify):
+        mock_verify.return_value = {'email': 'fbuser@example.com',
+                                    'first_name': 'Fb', 'last_name': 'User'}
+        resp = self.client.post(self.facebook_url, {'token': 'valid-fb-token'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertTrue(User.objects.filter(email='fbuser@example.com').exists())
+
+    @patch('accounts.views.verify_facebook_token')
+    def test_disabled_account_cannot_sign_in_socially(self, mock_verify):
+        User.objects.create_user(username='banned', email='banned@example.com',
+                                 password='test1234', is_active=False)
+        mock_verify.return_value = {'email': 'banned@example.com',
+                                    'first_name': '', 'last_name': ''}
+        resp = self.client.post(self.facebook_url, {'token': 'valid-fb-token'})
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch('accounts.views.verify_google_token')
+    def test_username_collision_gets_unique_suffix(self, mock_verify):
+        User.objects.create_user(username='clash', email='other@example.com',
+                                 password='test1234')
+        mock_verify.return_value = {'email': 'clash@example.com',
+                                    'first_name': '', 'last_name': ''}
+        resp = self.client.post(self.google_url, {'token': 'valid-google-token'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertTrue(User.objects.filter(email='clash@example.com')
+                        .exclude(username='clash').exists())
+
+
+class SocialTokenVerificationTest(TestCase):
+    """Guards on verify_* themselves - the checks that stop a token minted for
+    somebody else's app being replayed against ours."""
+
+    @override_settings(GOOGLE_CLIENT_ID='')
+    def test_google_unconfigured_is_rejected_not_silently_allowed(self):
+        with self.assertRaises(SocialAuthError):
+            verify_google_token('anything')
+
+    def test_google_empty_token_rejected(self):
+        with self.assertRaises(SocialAuthError):
+            verify_google_token('')
+
+    @override_settings(FACEBOOK_APP_ID='123', FACEBOOK_APP_SECRET='shh')
+    @patch('requests.get')
+    def test_facebook_token_for_another_app_is_rejected(self, mock_get):
+        mock_get.return_value.json.return_value = {
+            'data': {'is_valid': True, 'app_id': '999999'}}
+        with self.assertRaises(SocialAuthError):
+            verify_facebook_token('token-from-another-app')
+
+    @override_settings(FACEBOOK_APP_ID='123', FACEBOOK_APP_SECRET='shh')
+    @patch('requests.get')
+    def test_facebook_invalid_token_rejected(self, mock_get):
+        mock_get.return_value.json.return_value = {'data': {'is_valid': False}}
+        with self.assertRaises(SocialAuthError):
+            verify_facebook_token('expired')
 
 
 class OTPAbuseProtectionTest(TestCase):

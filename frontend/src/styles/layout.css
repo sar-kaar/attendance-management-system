@@ -1,26 +1,52 @@
+/* Layout tokens. Widths live here so the sidebar and the content margin can
+   never drift apart - the two must always agree or the page jumps. */
+:root {
+  --sidebar-w: 240px;
+  --topbar-h: 61px;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --speed: 220ms;
+}
+
 .layout {
   display: flex;
   min-height: 100vh;
 }
 
+/* ---------------- Sidebar ---------------- */
+
+/* Always full width on desktop: a rail that expanded on hover overlapped the
+   page content and hid what the user was reading, so navigation stays put and
+   the content is simply laid out beside it. */
 .sidebar {
-  width: 240px;
+  width: var(--sidebar-w);
   background: #1a1a2e;
   color: white;
   position: fixed;
+  top: 0;
+  left: 0;
   height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  z-index: 30;
 }
 
 .sidebar-logo {
-  padding: 24px;
-  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--topbar-h);
+  padding: 0 22px;
+  flex-shrink: 0;
 }
 
 .sidebar-logo h2 {
   font-size: 18px;
   font-weight: 600;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
 }
 
 .sidebar-logo span {
@@ -31,66 +57,90 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  padding-top: 8px;
 }
 
-.sidebar nav a {
+.sidebar nav a,
+.logout-btn {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 24px;
+  gap: 14px;
+  padding: 12px 0 12px 22px;
   color: #a0a0b0;
   text-decoration: none;
   font-size: 14px;
+  white-space: nowrap;
   border-left: 3px solid transparent;
-  transition: all 0.2s;
+  background: none;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  width: 100%;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 150ms var(--ease), background-color 150ms var(--ease);
 }
 
-.sidebar nav a:hover {
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.sidebar nav a:hover,
+.logout-btn:hover {
   color: white;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .sidebar nav a.active {
-  background: rgba(74, 144, 217, 0.1);
+  background: rgba(74, 144, 217, 0.12);
   color: #4a90d9;
   border-left-color: #4a90d9;
 }
 
-.sidebar-footer {
-  padding: 16px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+.sidebar nav a:focus-visible,
+.logout-btn:focus-visible,
+.drawer-toggle:focus-visible,
+.drawer-close:focus-visible {
+  outline: 2px solid #4a90d9;
+  outline-offset: -2px;
 }
 
-.logout-btn {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: none;
-  border: none;
-  color: #a0a0b0;
-  font-size: 14px;
-  cursor: pointer;
+.sidebar-footer {
   padding: 8px 0;
-  width: 100%;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
 }
 
 .logout-btn:hover {
   color: #ef4444;
 }
 
+/* ---------------- Main content ---------------- */
+
 .main-content {
   flex: 1;
-  margin-left: 240px;
+  margin-left: var(--sidebar-w);
   display: flex;
   flex-direction: column;
+  min-width: 0; /* lets wide tables scroll instead of stretching the page */
 }
 
 .topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 32px;
+  gap: 12px;
+  padding: 14px 32px;
   background: white;
   border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
 .user-info {
@@ -99,6 +149,7 @@
   gap: 8px;
   font-size: 14px;
   color: #666;
+  margin-left: auto;
 }
 
 .user-icon {
@@ -107,10 +158,107 @@
 }
 
 .page-content {
-  padding: 32px;
+  padding: 28px 32px;
   background: #f0f2f5;
   flex: 1;
+  animation: page-enter 260ms var(--ease) both;
 }
+
+/* Route transition: opacity + transform only, so it runs on the compositor
+   and never triggers layout. */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------------- Mobile drawer ---------------- */
+
+.drawer-toggle,
+.drawer-close {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 6px;
+  border-radius: 8px;
+  line-height: 0;
+}
+
+.drawer-toggle {
+  color: #374151;
+}
+
+.drawer-close {
+  color: #a0a0b0;
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 25;
+  opacity: 0;
+  transition: opacity var(--speed) var(--ease);
+}
+
+@media (max-width: 899px) {
+  /* Off-canvas: translate rather than animate width/left, so the slide is a
+     compositor-only transform. */
+  .sidebar {
+    width: var(--sidebar-w);
+    transform: translateX(-100%);
+    transition: transform var(--speed) var(--ease);
+  }
+
+  .drawer-open .sidebar {
+    transform: none;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .drawer-toggle,
+  .drawer-close {
+    display: inline-flex;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    pointer-events: none;
+  }
+
+  .drawer-open .sidebar-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .topbar {
+    padding: 12px 16px;
+  }
+
+  .page-content {
+    padding: 18px 16px;
+  }
+
+  .user-info span {
+    max-width: 46vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* ---------------- Shared ---------------- */
 
 .loading {
   display: flex;
@@ -128,4 +276,17 @@
   border-radius: 8px;
   margin-bottom: 16px;
   font-size: 14px;
+}
+
+/* Users who ask the OS for less motion get none of it. Not optional: for
+   vestibular disorders, motion can cause real nausea. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

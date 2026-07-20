@@ -11,6 +11,11 @@ gunicorn>=22.0,<23.0
 whitenoise>=6.5,<7.0
 psycopg2-binary>=2.9,<3.0
 
+# Social sign-in: google-auth verifies Google ID token signatures against
+# Google's public keys, requests talks to the Facebook Graph API.
+google-auth>=2.30,<3.0
+requests>=2.31,<3.0
+
 # face_recognition depends on plain "dlib", which has no prebuilt wheels and
 # fails to build without cmake/a C++ compiler. dlib-bin ships prebuilt
 # binaries under the same "dlib" import name, so we install it here and

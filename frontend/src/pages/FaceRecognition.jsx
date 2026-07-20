@@ -2,7 +2,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Webcam from "react-webcam";
 import { faceAPI, courseAPI, dashboardAPI } from "../services/api";
 import { FaCamera, FaUserPlus, FaList, FaUpload, FaSyncAlt, FaSearch, FaTimes } from "react-icons/fa";
+import { useNotify } from "../context/NotificationContext";
 import "../styles/table.css";
+import "../styles/face.css";
 
 function dataURLtoFile(dataUrl, filename) {
   const [meta, base64] = dataUrl.split(",");
@@ -14,6 +16,7 @@ function dataURLtoFile(dataUrl, filename) {
 }
 
 export default function FaceRecognition() {
+  const { notify } = useNotify();
   const [registeredFaces, setRegisteredFaces] = useState([]);
   const [courses, setCourses] = useState([]);
   const [activeTab, setActiveTab] = useState("register");
@@ -61,7 +64,7 @@ export default function FaceRecognition() {
 
       if (activeTab === "register") {
         if (!selectedStudent) {
-          alert("Please search for and select a student first");
+          notify("Search for and select a student before capturing a photo.", "info");
           setLoading(false);
           return;
         }
@@ -79,7 +82,7 @@ export default function FaceRecognition() {
         });
       } else if (activeTab === "mark") {
         if (!selectedCourse) {
-          alert("Please select a course first");
+          notify("Select a course before marking attendance.", "info");
           setLoading(false);
           return;
         }
@@ -184,8 +187,13 @@ export default function FaceRecognition() {
               {activeTab === "mark" && "Mark Attendance by Face"}
             </h3>
 
+            {/* Two columns on wide screens: the controls stacked on the left,
+                the camera beside them on the right. Stacking all of it made the
+                page taller than the viewport while half the card sat empty. */}
+            <div className="capture-grid">
+              <div className="capture-controls">
             {activeTab === "mark" && (
-              <div className="form-group" style={{ marginTop: 16, maxWidth: 300 }}>
+              <div className="form-group" style={{ marginTop: 16 }}>
                 <label>Select Course</label>
                 <select value={selectedCourse} onChange={(e) => setSelectedCourse(e.target.value)}>
                   <option value="">Select Course</option>
@@ -297,36 +305,34 @@ export default function FaceRecognition() {
               </div>
             )}
 
-            <div style={{ marginTop: 24 }}>
-              <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-                <button
-                  className={`tab ${inputMode === "camera" ? "active" : ""}`}
-                  onClick={() => {
-                    setInputMode("camera");
-                    setCameraError(null);
-                  }}
-                >
-                  <FaCamera /> Use Camera
-                </button>
-                <button
-                  className={`tab ${inputMode === "upload" ? "active" : ""}`}
-                  onClick={() => setInputMode("upload")}
-                >
-                  <FaUpload /> Upload Photo
-                </button>
+                <div className="mode-switch">
+                  <button
+                    className={`tab ${inputMode === "camera" ? "active" : ""}`}
+                    onClick={() => {
+                      setInputMode("camera");
+                      setCameraError(null);
+                    }}
+                  >
+                    <FaCamera /> Use Camera
+                  </button>
+                  <button
+                    className={`tab ${inputMode === "upload" ? "active" : ""}`}
+                    onClick={() => setInputMode("upload")}
+                  >
+                    <FaUpload /> Upload Photo
+                  </button>
+                </div>
               </div>
 
+              <div className="capture-preview">
               {inputMode === "camera" ? (
                 <div>
                   {cameraError ? (
-                    <div
-                      className="result-box error"
-                      style={{ padding: 16, borderRadius: 8, background: "#fee2e2", maxWidth: 480 }}
-                    >
-                      <p>{cameraError}</p>
+                    <div className="camera-error" role="alert">
+                      {cameraError}
                     </div>
                   ) : (
-                    <div style={{ maxWidth: 480 }}>
+                    <div className="camera-panel">
                       <Webcam
                         ref={webcamRef}
                         audio={false}
@@ -337,9 +343,9 @@ export default function FaceRecognition() {
                             "Camera access denied or unavailable. Check browser permissions, or switch to Upload Photo."
                           )
                         }
-                        style={{ width: "100%", borderRadius: 8 }}
+                        className="camera-view"
                       />
-                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                      <div className="camera-actions">
                         <button
                           className="btn btn-primary"
                           onClick={handleCapture}
@@ -359,7 +365,7 @@ export default function FaceRecognition() {
                   )}
                 </div>
               ) : (
-                <div>
+                <div className="upload-panel">
                   <input
                     type="file"
                     accept="image/*"
@@ -373,6 +379,7 @@ export default function FaceRecognition() {
                   </label>
                 </div>
               )}
+              </div>
             </div>
 
             {result && (
