@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, OTP
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -84,3 +84,14 @@ class AdminUserSerializer(serializers.ModelSerializer):
         if instance.role == 'student' and student_id:
             self._link_student(instance, student_id)
         return instance
+
+
+class OTPSendSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    purpose = serializers.ChoiceField(choices=OTP.Purpose.choices)
+
+
+class OTPVerifySerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField(max_length=6, min_length=6)
+    purpose = serializers.ChoiceField(choices=OTP.Purpose.choices)

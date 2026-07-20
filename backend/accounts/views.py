@@ -1,8 +1,9 @@
 from rest_framework import generics, permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .serializers import RegisterSerializer, UserSerializer, AdminUserSerializer
+from .serializers import RegisterSerializer, UserSerializer, AdminUserSerializer, OTPSendSerializer, OTPVerifySerializer
 from .models import User
+from .services import OTPService
 
 
 class RegisterView(generics.CreateAPIView):
@@ -47,3 +48,40 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         user.set_password(new_password)
         user.save(update_fields=['password'])
         return Response({'message': 'Password reset successfully'})
+
+
+class OTPSendView(generics.GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = OTPSendSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        purpose = serializer.validated_data['purpose']
+
+        otp, message = OTPService.send_otp(email, purpose)
+        if not otp:
+            return Response({'error': message}, status=500)
+
+        return Response({'message': message})
+
+
+class OTPVerifyView(generics.GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = OTPVerifySerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        success, message = OTPService.verify_otp(
+            serializer.validated_data['email'],
+            serializer.validated_data['code'],
+            serializer.validated_data['purpose']
+        )
+
+        if not success:
+            return Response({'error': message}, status=400)
+
+        return Response({'message': message})
