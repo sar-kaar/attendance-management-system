@@ -1,8 +1,12 @@
+import logging
+import secrets
+
 from django.utils import timezone
 from django.conf import settings
 from django.core.mail import send_mail
 from .models import OTP
-import random
+
+logger = logging.getLogger(__name__)
 
 
 class OTPService:
@@ -10,7 +14,16 @@ class OTPService:
 
     @staticmethod
     def generate_code():
-        return f"{random.randint(100000, 999999)}"
+        # secrets, not random: these codes gate password resets and 2FA, and
+        # random's Mersenne Twister is predictable from observed output.
+        return f"{secrets.randbelow(1000000):06d}"
+
+    @staticmethod
+    def recent_otp(email, purpose):
+        """Most recent unused OTP for this email/purpose, if any."""
+        return OTP.objects.filter(
+            email=email, purpose=purpose, is_used=False
+        ).order_by('-created_at').first()
 
     @staticmethod
     def create_otp(email, purpose):
@@ -36,11 +49,13 @@ class OTPService:
             'login_2fa': 'Two-Factor Authentication',
         }
 
+        expiry_minutes = getattr(settings, 'OTP_EXPIRY_MINUTES', 10)
+
         subject = f"Your {purpose_labels.get(otp.purpose, 'OTP')} Code"
         message = f"""
 Your verification code is: {otp.code}
 
-This code will expire in {10} minutes.
+This code will expire in {expiry_minutes} minutes.
 If you didn't request this, please ignore this email.
 """
         html_message = f"""
@@ -53,7 +68,7 @@ If you didn't request this, please ignore this email.
         <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
             {otp.code}
         </div>
-        <p>This code will expire in <strong>10 minutes</strong>.</p>
+        <p>This code will expire in <strong>{expiry_minutes} minutes</strong>.</p>
         <p>If you didn't request this, please ignore this email.</p>
         <hr style="margin: 20px 0;">
         <p style="font-size: 12px; color: #888;">AMS Attendance Management System</p>
@@ -73,10 +88,26 @@ If you didn't request this, please ignore this email.
             )
             return True
         except Exception:
+            # Log the cause: SMTP auth failures and unverified-sender rejections
+            # are the common ones, and a bare False makes them undiagnosable in
+            # production where DEBUG is off.
+            logger.exception('Failed to send OTP email to %s (purpose=%s)',
+                             otp.email, otp.purpose)
             return False
 
     @classmethod
     def send_otp(cls, email, purpose):
+        # Per-email cooldown. The IP throttle on the view can't stop someone
+        # mailbombing one address from rotating IPs, and this also protects the
+        # shared Brevo daily quota.
+        cooldown = getattr(settings, 'OTP_RESEND_COOLDOWN_SECONDS', 60)
+        previous = cls.recent_otp(email, purpose)
+        if previous:
+            age = (timezone.now() - previous.created_at).total_seconds()
+            if age < cooldown:
+                wait = int(cooldown - age)
+                return None, f"Please wait {wait} seconds before requesting another code."
+
         otp = cls.create_otp(email, purpose)
         sent = cls.send_otp_email(otp)
         if not sent:

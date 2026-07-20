@@ -25,6 +25,9 @@ build/
 *.swp
 *.swo
 
+# Local scratch runners - these hardcode one machine's absolute paths
+*.bat
+
 # OS
 .DS_Store
 Thumbs.db

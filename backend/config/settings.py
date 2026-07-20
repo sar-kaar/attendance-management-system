@@ -118,6 +118,17 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    # OTP endpoints are AllowAny and send real email on demand, so they are
+    # rate limited per client IP. Without this the send endpoint is an open
+    # relay: a loop can burn the whole Brevo daily quota and mail arbitrary
+    # addresses in our name.
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.ScopedRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'otp_send': config('THROTTLE_OTP_SEND', default='5/hour'),
+        'otp_verify': config('THROTTLE_OTP_VERIFY', default='20/hour'),
+    },
 }
 
 SIMPLE_JWT = {
@@ -137,3 +148,4 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='AMS <noreply@ams-back
 
 # OTP Settings
 OTP_EXPIRY_MINUTES = config('OTP_EXPIRY_MINUTES', default=10, cast=int)
+OTP_RESEND_COOLDOWN_SECONDS = config('OTP_RESEND_COOLDOWN_SECONDS', default=60, cast=int)

@@ -53,6 +53,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
 class OTPSendView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = OTPSendSerializer
+    throttle_scope = 'otp_send'
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -62,7 +63,9 @@ class OTPSendView(generics.GenericAPIView):
 
         otp, message = OTPService.send_otp(email, purpose)
         if not otp:
-            return Response({'error': message}, status=500)
+            # Cooldown is the caller asking too soon, not a server fault.
+            code = 429 if 'wait' in message.lower() else 500
+            return Response({'error': message}, status=code)
 
         return Response({'message': message})
 
@@ -70,6 +73,7 @@ class OTPSendView(generics.GenericAPIView):
 class OTPVerifyView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = OTPVerifySerializer
+    throttle_scope = 'otp_verify'
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)

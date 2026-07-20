@@ -1,4 +1,5 @@
 from django.test import TestCase, override_settings
+from django.core.cache import cache
 from rest_framework.test import APIClient
 from rest_framework import status
 from django.core import mail
@@ -99,6 +100,11 @@ class OTPTest(TestCase):
         self.send_url = '/api/auth/otp/send/'
         self.verify_url = '/api/auth/otp/verify/'
         self.email = 'test@example.com'
+        # DRF keeps throttle history in the cache, which is process-global and
+        # would otherwise leak across tests: every test hits the same endpoint
+        # from the same client IP, so the 6th send in this class would 429 on
+        # throttle state left by earlier tests rather than its own behaviour.
+        cache.clear()
 
     def test_send_otp_success(self):
         response = self.client.post(self.send_url, {
@@ -201,3 +207,38 @@ class OTPTest(TestCase):
         success, message = OTPService.verify_otp('test@example.com', '000000', 'email_verification')
         self.assertFalse(success)
         self.assertIn('Maximum attempts', message)
+
+
+class OTPAbuseProtectionTest(TestCase):
+    """The send endpoint is AllowAny and sends real mail, so it carries two
+    independent limits: a per-email cooldown and a per-IP throttle."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.send_url = '/api/auth/otp/send/'
+        cache.clear()
+
+    def test_resend_within_cooldown_is_rejected(self):
+        first = self.client.post(self.send_url, {
+            'email': 'cooldown@example.com', 'purpose': 'email_verification'})
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+
+        second = self.client.post(self.send_url, {
+            'email': 'cooldown@example.com', 'purpose': 'email_verification'})
+        self.assertEqual(second.status_code, 429)
+        self.assertIn('wait', str(second.data).lower())
+        # The blocked request must not have sent a second mail.
+        self.assertEqual(len(mail.outbox), 1)
+
+    @override_settings(OTP_RESEND_COOLDOWN_SECONDS=0)
+    def test_ip_throttle_blocks_after_rate_limit(self):
+        # Cooldown disabled and each address used once, so only the per-IP
+        # throttle (5/hour) can stop these.
+        statuses = [
+            self.client.post(self.send_url, {
+                'email': f'flood{i}@example.com', 'purpose': 'email_verification'}).status_code
+            for i in range(6)
+        ]
+        self.assertEqual(statuses[:5], [status.HTTP_200_OK] * 5)
+        self.assertEqual(statuses[5], 429)
+        self.assertEqual(len(mail.outbox), 5)

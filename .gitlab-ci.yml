@@ -61,6 +61,33 @@ deploy-backend:
   script:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password="$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
     - az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+    - |
+      # Sync mail/OTP config from GitLab CI/CD variables into App Service
+      # settings. The values are never written here - they come from the
+      # masked project variables at runtime, so nothing secret is committed.
+      #
+      # Guarded on EMAIL_HOST_PASSWORD being set: if the variable is missing
+      # (or is unavailable because it is Protected and this branch is not),
+      # skip rather than overwrite the live app settings with empty strings
+      # and silently break OTP email.
+      if [ -n "$EMAIL_HOST_PASSWORD" ]; then
+        echo "Syncing email settings to App Service..."
+        az webapp config appsettings set \
+          --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" \
+          --settings \
+            EMAIL_HOST="$EMAIL_HOST" \
+            EMAIL_PORT="$EMAIL_PORT" \
+            EMAIL_USE_TLS="$EMAIL_USE_TLS" \
+            EMAIL_HOST_USER="$EMAIL_HOST_USER" \
+            EMAIL_HOST_PASSWORD="$EMAIL_HOST_PASSWORD" \
+            DEFAULT_FROM_EMAIL="$DEFAULT_FROM_EMAIL" \
+            OTP_EXPIRY_MINUTES="${OTP_EXPIRY_MINUTES:-10}" \
+            OTP_RESEND_COOLDOWN_SECONDS="${OTP_RESEND_COOLDOWN_SECONDS:-60}" \
+          --output none
+        echo "Email settings synced."
+      else
+        echo "EMAIL_HOST_PASSWORD not set - skipping email settings sync."
+      fi
     - python3 -c "import shutil; shutil.make_archive('backend', 'zip', 'backend')"
     - |
       # Azure's front door enforces a fixed ~230s limit on the synchronous
