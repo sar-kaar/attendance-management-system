@@ -1,256 +1,155 @@
-# Handoff — Attendance Management System (CSE 405)
-## Generated Jul 10 (Day 4) — Post Session 4 (Architecture diagrams + Issue cleanup)
+# HANDOFF — Attendance Management System
+
+> Last updated: 2026-07-20
 
 ---
 
-## Session 6 Update (Jul 10) — dlib/face_recognition Added + .gitignore Fixed + File Location Fixed
+## Project Overview
 
-**Deps: DONE.**
-- `dlib` + `face_recognition` added to `requirements.txt` (user installed locally, verified via smoke test)
-- `Guidelines/REALITY_CHECK.md` — Stack line updated, new "Build Requirements — dlib" section added (CMake + VS Build Tools / Windows, brew/apt for mac/linux). No face code exists yet (US-07, issue #3, not started) — libs installed ahead of implementation.
-
-**`.gitignore` bug found + fixed:**
-- File had corrupted lines (`. v e n v /` with literal spaces between chars) — did not match `.venv/`, so the whole venv was showing as untracked in `git status`
-- Rewritten clean. Added missing entries: `.venv/`, `.vscode/`, `*.whl`, `server_stdout.txt`, `server_stderr.txt`
-
-**File location bug found + fixed:**
-- `HANDOFF.md` and `Guidelines/REALITY_CHECK.md` lived at **project root** (`D:\CSE Project\Attendance Management System\`), one level ABOVE the actual git repo — `.git` only exists inside `attendance-management-system/`. These two files were never trackable by git no matter what directory `git add` was run from.
-- Both files copied into the repo: `attendance-management-system/HANDOFF.md` (this file, now in-repo) and `attendance-management-system/Guidelines/REALITY_CHECK.md`
-- Root copies (`D:\CSE Project\Attendance Management System\HANDOFF.md` and `Guidelines\REALITY_CHECK.md`) still exist — treat the in-repo copies as canonical, update both until root copies are deleted/retired
-
-**Git commit: STILL NOT DONE — pending terminal run.**
-- `git status` (run from `attendance-management-system/`) also showed OTHER modified/untracked files beyond this session's docs work: `attendance/serializers.py`, `attendance/views.py`, `courses/models.py`, `docs/database-schema.md`, `docs/er-diagram.md` (modified), `docs/er_diagram.png` + `docs/figma/.gitkeep` (deleted), `docs/architecture.svg`, `docs/attendance-flow.svg`, `docs/system-architecture.md` (untracked). These look like legitimate earlier-session work never committed, not accidental changes. NEXT AGENT: confirm with user before committing these; do not assume safe to bundle blindly into the deps commit below.
-
-**NEXT STEPS (terminal, run from `attendance-management-system/`):**
-1. Confirm `.gitignore` fix worked: `git status` — `.venv/` should now be gone from untracked list
-2. Commit deps + docs (all now inside the repo, one command):
-   ```powershell
-   git add requirements.txt Guidelines/REALITY_CHECK.md HANDOFF.md docs/requirements-dashboard-features.md .gitignore
-   git commit -m "[deps] Add face_recognition/dlib, fix .gitignore, move HANDOFF/REALITY_CHECK into repo"
-   git push
-   ```
-3. Separately review + decide on the other modified/untracked files listed above (serializers.py, views.py, courses/models.py, docs schema/diagram files) — likely need their own commit(s) once confirmed intentional
-4. `docs/er-diagram.md` showing as MODIFIED (not just existing) — check what changed, may relate to the previously "unverified" branch question
-5. Delete or update the stale root-level `HANDOFF.md`/`Guidelines/REALITY_CHECK.md` copies once team confirms the in-repo location is the new standard
+| Field | Value |
+|---|---|
+| Course | CSE 405 Software Project Management |
+| GitHub repo | https://github.com/sar-kaar/attendance-management-system |
+| GitLab repo (CI/CD) | https://gitlab.com/rokayaabi123/attendance-management-system |
+| Trello | https://trello.com/b/ecB6ppQa/attendance-management-system |
+| Live backend | https://ams-backend.azurewebsites.net |
+| Layout | `backend/` (Django + DRF) and `frontend/` (React + Vite) as independent top-level projects |
+| Django apps | `accounts`, `students`, `courses`, `attendance`, `face`, `dashboard` |
 
 ---
 
-**Database part: DONE.**
-- `AttendanceSerializer.validate()` added — rejects marking attendance for a student not in an active `Enrollment` for that course.
-- `AttendanceViewSet.mark_bulk` now filters records against enrolled students; non-enrolled ones are skipped and returned in a `skipped` list instead of silently creating bad rows.
-- `Guidelines/REALITY_CHECK.md` and `docs/database-schema.md` updated — both "Next step" notes replaced with "Done", stale "Four tables, no Enrollment" header line fixed.
-- Files touched: `attendance/serializers.py`, `attendance/views.py`.
+## Team & Assignments
 
-**Day 4 (System Architecture) doc: DONE.**
-- `docs/system-architecture.md` created — stack table, Django apps, full endpoint table, folder structure, security config confirmation, enrollment enforcement note, known open items.
-
-**Still open (unchanged from before):**
-- No Enrollment REST endpoint exposed
-- `docs/er-diagram.md` existence on its branch unverified
-- Day 5 (backend hardening beyond SECRET_KEY/CORS, which were already done) and Day 6 (merge + sprint 1 planning) not started
+| Member | Role | GitHub | Trello ID |
+|---|---|---|---|
+| Abhishek Rokaya | Backend / Admin | `sar-kaar` | `65a0b5c780c6cf7c94c87ec8` |
+| Prizma Subedi | PM | `Prizma515` | `686b2ba0d197f3d3f50da2a5` |
+| Ekata Rimal | Frontend | `ekatarimal` | `6a4b0ce1a1620a0fd86adcd4` |
 
 ---
 
-## ⚠️ TERMINAL COMMANDS — RUN THESE YOURSELF
+## Status: backend + frontend both substantially built and deployed
 
-Run all commands from `attendance-management-system/` (the Django project root with `manage.py`).
+This is well ahead of the Week-by-week plan in `Guidelines/01_WEEKLY_ROADMAP.md` and
+`Guidelines/03_PROJECT_TRACKER.csv` — those documents are static plans written in
+advance and are now stale (as of 2026-07-20 they still show Sprint 1 "in progress"
+for basic register/login). **Treat this file and `Guidelines/REALITY_CHECK.md` as the
+source of truth for actual status, not the tracker CSV.**
 
-### 1. Verify no migration drift
-```powershell
-python manage.py makemigrations --check
-```
-Expect: "No changes detected". ✅ Confirmed clean (Session 6).
+### API endpoints (all working)
 
-### 2. Django system check
-```powershell
-python manage.py check
-```
-Fix any warnings. ✅ Confirmed clean (Session 6).
+| Module | Endpoint | Status |
+|---|---|---|
+| Auth | `/api/auth/register/`, `/api/auth/login/`, `/api/auth/token/refresh/` | Done |
+| Email OTP verification | `/api/auth/otp/*` (Brevo SMTP) | Done |
+| Social sign-in | Google / Facebook OAuth (settings-gated) | Done |
+| Users | `/api/auth/users/` | Done |
+| Students | `/api/students/` | Done |
+| Courses | `/api/courses/` | Done |
+| Enrollments | `/api/courses/enrollments/` | Done (US-15) |
+| Attendance CRUD | `/api/attendance/` | Done |
+| Attendance Bulk | `/api/attendance/bulk/` | Done |
+| Attendance Report | `/api/attendance/report/` | Done |
+| Attendance Export (CSV/PDF) | `/api/attendance/export/csv/`, `/export/pdf/` | Done |
+| Attendance Codes | `/api/attendance/codes/` | Done (US-14) |
+| Face Recognition | `/api/face/` | Done — provider-selectable: local `dlib` or Azure AI Face API (`FACE_PROVIDER` env var) |
+| Dashboard | `/api/dashboard/*` (US-06 to US-13, PR #30) | Done, backend-complete |
 
-### 3. Face-detection smoke test
-```powershell
-python -c "import cv2, face_recognition; print('ok')"
-```
-Originally failed (`face_recognition` not installed) — user installed `dlib` + `face_recognition` locally in Session 6. Re-run to confirm.
+### Recent work (this session, 2026-07-20)
 
-### 4. Git — commit this session's work
-See "NEXT STEPS" above for the current, corrected command (paths fixed).
+- Added `backend/face/providers.py` — Azure AI Face API as an alternative to local
+  `dlib`/`face_recognition`, selected via `FACE_PROVIDER=local|azure`. Lets face
+  recognition work on hosts that can't build `dlib` (e.g. constrained App Service
+  plans).
+- Replaced native `alert()`/`confirm()` with the app's toast/confirm dialogs across
+  `Attendance`, `AttendanceCodes`, `Courses`, `Enrollments`, and `Students` pages for
+  consistent success/error feedback.
+- (Prior commits today) Social sign-in + email verification UI, dashboard layout
+  rework, OTP hardening, Azure mail-config sync on deploy.
 
----
+### Deployment
 
-## How to Start
+- **Host**: Azure App Service `ams-backend` (resource group `ams-rg`), frontend
+  static assets to storage account `amsfrontendweb`.
+- **CI/CD**: GitLab CI (`.gitlab-ci.yml`) — tests run on `main`, `develop`, and merge
+  requests; frontend build + backend deploy run only on `main`.
+- **GitHub** (`origin`) is used for team visibility, issues, and PRs; **GitLab**
+  (`gitlab`) drives the actual deploy pipeline. Both remotes are kept in sync.
+- Mail/OTP secrets are synced from GitLab CI/CD masked variables into Azure App
+  Service settings at deploy time — nothing secret is committed.
 
-Paste this whole section into a **fresh chat** with Filesystem MCP connected to `D:\CSE Project\Attendance Management System`.
+### Test status
 
-```
-Handoff — Attendance Management System (CSE 405)
-Connect Filesystem MCP (or Claude Code / a terminal) at
-`D:\CSE Project\Attendance Management System`.
-
-Read first (in order):
-1. AGENTS.md — workflow instructions (loaded automatically every session)
-2. attendance-management-system/Guidelines/REALITY_CHECK.md — source of truth on stack/tables/gaps (now in-repo, canonical)
-3. attendance-management-system/docs/database-schema.md — 5 tables now (Enrollment added)
-4. Weekly Tasks/GIT_WORKFLOW.md Section 7 — real branch names
-5. attendance-management-system/HANDOFF.md (this file, now in-repo) — session context
-
-Where things stand (Jul 10, Session 6):
-
-CONFIRMED WORKING:
-- Project .venv Python (3.11.15) resolves first in PATH
-- `python manage.py makemigrations --check` — no drift
-- `python manage.py check` — no issues
-- All 13 requirements installed in .venv (11 original + dlib + face_recognition)
-- .gitignore fixed (was corrupted, .venv/ now properly ignored)
-- HANDOFF.md + Guidelines/REALITY_CHECK.md now live inside the git repo
-
-ENROLLMENT TABLE — DONE (Jul 10):
-- `courses.Enrollment` model added, migrations applied, AttendanceSerializer enforces it, mark_bulk skips non-enrolled
-
-SECURITY CONFIG:
-- config/settings.py: SECRET_KEY/DEBUG/ALLOWED_HOSTS/CORS_ALLOWED_ORIGINS all load via python-decouple from .env
-- .env exists with generated SECRET_KEY (gitignored)
-- CORS restricted to http://localhost:3000,http://127.0.0.1:3000
-
-NEXT STEPS:
-1. Run the deps/docs commit (see NEXT STEPS section above) — not yet pushed
-2. Review + commit the other pending changes (serializers.py, views.py, courses/models.py, docs files) after confirming with user
-3. Re-run face-detection smoke test, confirm `ok`
-4. Add Enrollment REST endpoint (US-15, issue #25)
-5. Ekata's wireframes and Prizma's SRS Section 2 — check status
-
-KNOWN OPEN ITEMS:
-- docs/er-diagram.md showing as modified, reason unclear
-- No CI/CD or deployment config exists
-- No Enrollment REST endpoint exposed yet
-- Root-level HANDOFF.md/Guidelines/ copies still exist, should be retired once team confirms in-repo location
-```
+Backend test suite runs in GitLab CI on every push to `main`/`develop` and on MRs
+(`python manage.py test`, with `face-recognition` installed `--no-deps` for the face
+app tests). Check the latest GitLab pipeline for current pass/fail counts rather than
+a number cached here.
 
 ---
 
-## Session Summary (Session 6, this chat)
+## Pending work
 
-### What was accomplished
-1. Ran and confirmed clean: `makemigrations --check`, `manage.py check`
-2. Diagnosed missing `face_recognition` module, user installed `dlib` + `face_recognition` locally
-3. Added `dlib`/`face_recognition` to `requirements.txt`
-4. Updated `Guidelines/REALITY_CHECK.md` — stack line + new Build Requirements section (Windows CMake/VS Build Tools note)
-5. Found and fixed corrupted `.gitignore` (literal-space `.venv/` pattern that never matched)
-6. Discovered `HANDOFF.md`/`Guidelines/` lived outside the git repo entirely — copied both into `attendance-management-system/`
+### Prizma (PM) — still incomplete (GitHub issues open)
 
-### Files Modified
-| File | Change |
-|------|--------|
-| `attendance-management-system/requirements.txt` | Added `dlib`, `face_recognition` |
-| `attendance-management-system/.gitignore` | Rewritten — fixed corrupted `.venv/` pattern, added `.vscode/`, `*.whl`, log files |
+| Issue | Title |
+|---|---|
+| #7 T-002 | Requirements Gathering |
+| #5 T-003 | SRS Document (IEEE 830) |
+| #11 T-005 | Wireframes and Mockups |
+| #8 T-007 | Project Charter |
+| #12 T-008 | Team Norms and Comms Plan |
 
-### Files Created (copies, now canonical)
-| File | Purpose |
-|------|---------|
-| `attendance-management-system/Guidelines/REALITY_CHECK.md` | Moved in-repo from project root |
-| `attendance-management-system/HANDOFF.md` | Moved in-repo from project root (this file) |
+### Ekata (Frontend) — still incomplete
 
-### Remaining Work
-- Commit + push (command ready, see NEXT STEPS)
-- Review other pending file changes before bundling into a commit
-- Re-verify face-detection smoke test
-- Retire root-level duplicate copies once confirmed
+| Issue | Title |
+|---|---|
+| #1 | US-10: Dashboard UI |
+| #23 | US-12: ECA Tracking |
+
+### GitHub issue hygiene (found this session, not yet acted on)
+
+- PR #30 (*"Dashboard API — US-06 to US-13"*, merged 2026-07-18) implemented the
+  backend for issues **#19 (US-06), #17 (US-07), #18 (US-08), #20 (US-09), #21
+  (US-11), #22 (US-13)** but none of them were closed. Recommend closing once
+  confirmed working.
+- Two open issues are both titled "US-10": **#1** ("Dashboard UI", frontend, genuinely
+  open) and **#24** ("Chronic Latecomers Detection", backend, covered by PR #30). Just
+  a numbering collision from reused labels — not urgent, but confusing in triage.
 
 ---
 
-## Session 3 Update (Jul 10, End of Day) — Google Sheets Analysis + User Stories + Week 1 Complete
+## Architecture notes
 
-**Google Sheets Analysis: DONE.**
-Read all 4 Google Sheets via Composio:
-1. **Attendance** (1C_2fTYvJVN8fJSNO0n9HTzwdlFzHitCvl2L_UWno9rc) — Class 1 date grid + Attendance key
-2. **SUM I 2026 Dashboard** (14cQTeuRuA6GQB73f3Wzh4mnqsZFwzr2Fcr_8DnzaYCQ) — Full dashboard with stats, faculty perf, at-risk, latecomers
-3. **Testing_Sheet_For_Dashboard** (1H3tESuWBB9cyPLivJH4yidrnfnd_ptPotieFjN3RGCw) — Same dashboard layout, 1875 Master Data rows
-4. **Student Master Dashboard** (1AMui6udlHjt09hoNuCSL1VRXiVxBJ9XM0NbtEuFOZMs) — Same layout, 1875 Master Data rows
+- **Database**: SQLite (local dev) / production DB per Azure App Service config.
+- **Auth**: SimpleJWT (access + refresh) + email OTP verification (Brevo SMTP) +
+  Google/Facebook social sign-in.
+- **User model**: custom `accounts.User` with roles: `admin`, `faculty`, `student`.
+- **Face recognition**: `FACE_PROVIDER` env var selects `local` (dlib/face_recognition,
+  no network call) or `azure` (Azure AI Face API, needs `AZURE_FACE_ENDPOINT` /
+  `AZURE_FACE_KEY` / `AZURE_FACE_PERSON_GROUP`). Local is the default.
+- **Seed data**: `python manage.py seed_data`.
+- **Static files**: WhiteNoise (backend) / Azure storage (frontend build).
 
-**Features identified from Google Sheets NOT in Django code (10 user stories):**
+---
 
-| US | Feature | GitHub Issue | Trello Card |
-|----|---------|-------------|-------------|
-| US-06 | Student Academic Dashboard API | #19 | Card 86 |
-| US-07 | Attendance Statistics Overview | #17 | Card 87 |
-| US-08 | Faculty Performance Dashboard | #18 | Card 88 |
-| US-09 | At-Risk Student Detection (<60%) | #20 | Card 89 |
-| US-10 | Chronic Latecomers Detection (3+ Lates) | #24 | Card 90 |
-| US-11 | Master Data Bulk Import | #21 | Card 91 |
-| US-12 | ECA (Extra-Curricular Activity) Tracking | #23 | Card 92 |
-| US-13 | Incomplete Records Detection | #22 | Card 93 |
-| US-14 | Attendance Key Configuration (P/L/E/U) | #26 | Card 94 |
-| US-15 | Enrollment REST Endpoint | #25 | Card 95 |
+## Next steps
 
-**What was accomplished this session:**
-1. Read all 4 Google Sheets via Composio (googlesheets tools) — extracted Master Data (1875 rows), dashboard layout, stats sheets
-2. Analyzed each feature against current Django code (models, views, serializers, URLs)
-3. Created 10 GitHub Issues (#17-#26) on https://github.com/sar-kaar/attendance-management-system with `enhancement` labels
-4. Created 10 Trello Cards (86-95) in Product Backlog list, each linking to its GitHub issue
-5. Updated HANDOFF.md, team DAY_BY_DAY.md files, DAILY_SCRIPTS.md for Week 1 completion
-6. Created Week 2 updated plan prioritizing dashboard/analytics features
+1. Push `develop` (currently ahead locally) to both `origin` and `gitlab`.
+2. Close the stale-but-implemented dashboard issues (#19, #17, #18, #20, #21, #22)
+   after a quick sanity check against `/api/dashboard/*`.
+3. Chase Prizma on T-002/003/005/007/008 — none started, all overdue against the
+   Week 1–2 deadlines in `Guidelines/04_DELIVERABLES_CHECKLIST.md`.
+4. Chase Ekata on US-10 (Dashboard UI, #1) and US-12 (ECA Tracking, #23).
+5. Consider requesting `read:project` scope on the `gh` token if a GitHub Projects
+   board is wanted for tracking (`gh auth refresh -s read:project`).
+6. Retire or refresh `Guidelines/03_PROJECT_TRACKER.csv` — it no longer reflects
+   reality and risks misleading anyone who reads it as current status.
 
-**Resolved from previous session:**
-- Enrollment REST endpoint gap — now tracked as US-15 (#25)
-- Week 2 files re-audited — plans updated for dashboard features
+---
 
-**Still open:**
-- docs/er-diagram.md existence unverified on its branch
-- No CI/CD or deployment config exists
-- 10 new user stories need Sprint 1 backlog reprioritization
+## Prior session log
 
-## Session 5 Update (Jul 10) — Dashboard Requirements + GitHub Issues Labeled
-
-**Docs created:**
-- `docs/requirements-dashboard-features.md` — Full requirements doc for all 10 dashboard features (US-06 through US-15), each with description, acceptance criteria, API specs, and sprint priority table
-
-**GitHub Issues — labels + descriptions updated (via Composio GITHUB_UPDATE_AN_ISSUE):**
-| Issue | US | Title | Labels |
-|-------|----|-------|--------|
-| #17 | US-07 | Attendance Statistics Overview | enhancement, P0 |
-| #18 | US-08 | Faculty Performance Dashboard | enhancement, P1 |
-| #19 | US-06 | Student Academic Dashboard API | enhancement, P0 |
-| #20 | US-09 | At-Risk Student Detection | enhancement, P1 |
-| #21 | US-10 | Faculty attendance overview | enhancement, P1 |
-| #22 | US-11 | Summary Dashboard View | enhancement, P0 |
-| #23 | US-12 | Toppers Dashboard | enhancement, P2 |
-| #24 | US-13 | Course Progression | enhancement, P2 |
-| #25 | US-15 | Enrollment REST Endpoint | enhancement, P0 |
-| #26 | US-14 | Subject-Wise Headsheet | enhancement, P1 |
-
-All 10 issues now reference `docs/requirements-dashboard-features.md` in their body with acceptance criteria.
-
-**Google Sheets:**
-- Connected `mit_account` (abhishekrokaya.s24@mitnepal.edu.np) for Google Sheets
-- Connected `personal2` (same account) for Google Drive
-- Read AMS sheet — `Starting` + `Agile Release Plan` sheets
-
-**Resolved from previous session:**
-- N/A
-
-**Still open:**
-- docs/er-diagram.md existence unverified on its branch
-- No CI/CD or deployment config exists
-- Terminal commands (makemigrations --check, manage.py check, face-detection) not run yet
-
-## Session 4 Update (Jul 10) — Architecture Diagrams + Issue Cleanup
-
-**GitHub Issues — re-opened (were closed by mistake):**
-- #1 US-10: Dashboard UI → re-opened
-- #2 US-09: Report API → re-opened
-- #3 US-07: Face Registration API → re-opened
-- #4 ER Diagram Documentation → re-opened
-- #10 T-006: System Architecture Design → re-opened (I closed it prematurely)
-
-**System Architecture enhanced:**
-- `docs/system-architecture.md` now has 2 Mermaid diagrams (render automatically on GitHub):
-  1. Component diagram (Frontend → Django Apps → Database → External Services)
-  2. Sequence diagram (Login flow + Attendance marking flow)
-- Rendered PNGs saved alongside:
-  - `docs/architecture-diagram.png`
-  - `docs/sequence-diagram.png`
-- Images referenced in the markdown doc
-
-**Remaining:**
-- Do NOT close any GitHub issues without user confirmation
-- Trello not touched (user will sync)
+Earlier session-by-session debug notes (dlib install, `.gitignore` fix, file-location
+fix, Google Sheets → GitHub issue generation, architecture diagrams) have been
+trimmed from this file now that all of that work is long resolved and merged. See
+git history (`git log -- HANDOFF.md`) for the full archive if needed.
