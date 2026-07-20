@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { enrollmentAPI, studentAPI, courseAPI } from "../services/api";
 import { FaPlus, FaTrash } from "react-icons/fa";
+import { useNotify, formatApiError } from "../context/NotificationContext";
 import "../styles/table.css";
 
 export default function Enrollments() {
+  const { notify, confirm } = useNotify();
   const [enrollments, setEnrollments] = useState([]);
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -41,18 +43,27 @@ export default function Enrollments() {
       setForm({ student: "", course: "" });
       loadEnrollments();
     } catch (err) {
-      setError(
-        err.response?.data?.non_field_errors?.[0] ||
-          JSON.stringify(err.response?.data) ||
-          "Failed to enroll student"
-      );
+      // formatApiError already unwraps non_field_errors, so the raw JSON
+      // fallback that used to surface here is gone.
+      setError(formatApiError(err, "Failed to enroll student"));
     }
   };
 
   const handleUnenroll = async (enrollment) => {
-    if (!confirm(`Remove ${enrollment.student_name} from ${enrollment.course_name}?`)) return;
-    await enrollmentAPI.delete(enrollment.id);
-    loadEnrollments();
+    const ok = await confirm({
+      title: "Remove enrollment?",
+      message: `${enrollment.student_name} will be unenrolled from ${enrollment.course_name}.`,
+      confirmText: "Remove",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await enrollmentAPI.delete(enrollment.id);
+      loadEnrollments();
+      notify("Enrollment removed.", "success");
+    } catch (err) {
+      notify(formatApiError(err, "Could not remove the enrollment."), "error");
+    }
   };
 
   return (

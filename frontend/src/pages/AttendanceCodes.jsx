@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { attendanceCodeAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { useNotify, formatApiError } from "../context/NotificationContext";
 import "../styles/table.css";
 
 export default function AttendanceCodes() {
   const { user } = useAuth();
+  const { notify, confirm } = useNotify();
   const isAdmin = user?.role === "admin";
   const [codes, setCodes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,10 +37,11 @@ export default function AttendanceCodes() {
         await attendanceCodeAPI.create(form);
       }
       setShowModal(false);
-      setEditCode(null);
       loadCodes();
+      notify(editCode ? "Attendance code updated." : "Attendance code created.", "success");
+      setEditCode(null);
     } catch (err) {
-      alert(JSON.stringify(err.response?.data));
+      notify(formatApiError(err, "Could not save the attendance code."), "error");
     }
   };
 
@@ -54,9 +57,22 @@ export default function AttendanceCodes() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Delete this attendance code?")) return;
-    await attendanceCodeAPI.delete(id);
-    loadCodes();
+    const ok = await confirm({
+      title: "Delete attendance code?",
+      message: "This cannot be undone.",
+      confirmText: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await attendanceCodeAPI.delete(id);
+      loadCodes();
+      notify("Attendance code deleted.", "success");
+    } catch (err) {
+      // The delete used to be unguarded, so a failure vanished silently and
+      // the row simply stayed put with no explanation.
+      notify(formatApiError(err, "Could not delete the attendance code."), "error");
+    }
   };
 
   return (

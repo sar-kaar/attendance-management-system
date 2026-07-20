@@ -166,3 +166,9 @@ GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
 GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET', default='')
 FACEBOOK_APP_ID = config('FACEBOOK_APP_ID', default='')
 FACEBOOK_APP_SECRET = config('FACEBOOK_APP_SECRET', default='')
+
+# Face recognition provider: 'local' (dlib, default) or 'azure' (Azure AI Face API).
+FACE_PROVIDER = config('FACE_PROVIDER', default='local')
+AZURE_FACE_ENDPOINT = config('AZURE_FACE_ENDPOINT', default='')
+AZURE_FACE_KEY = config('AZURE_FACE_KEY', default='')
+AZURE_FACE_PERSON_GROUP = config('AZURE_FACE_PERSON_GROUP', default='ams-students')

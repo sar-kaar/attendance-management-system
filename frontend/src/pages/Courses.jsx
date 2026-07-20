@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { courseAPI } from "../services/api";
 import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { useNotify, formatApiError } from "../context/NotificationContext";
 import "../styles/table.css";
 
 export default function Courses() {
+  const { notify, confirm } = useNotify();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -37,11 +39,12 @@ export default function Courses() {
         await courseAPI.create(form);
       }
       setShowModal(false);
-      setEditCourse(null);
       setForm({ name: "", code: "", description: "", credits: 3 });
       loadCourses();
+      notify(editCourse ? "Course updated." : "Course created.", "success");
+      setEditCourse(null);
     } catch (err) {
-      alert(JSON.stringify(err.response?.data));
+      notify(formatApiError(err, "Could not save the course."), "error");
     }
   };
 
@@ -57,9 +60,20 @@ export default function Courses() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Delete this course?")) return;
-    await courseAPI.delete(id);
-    loadCourses();
+    const ok = await confirm({
+      title: "Delete course?",
+      message: "Enrollments and attendance recorded against it may be affected.",
+      confirmText: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await courseAPI.delete(id);
+      loadCourses();
+      notify("Course deleted.", "success");
+    } catch (err) {
+      notify(formatApiError(err, "Could not delete the course."), "error");
+    }
   };
 
   return (

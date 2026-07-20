@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { attendanceAPI, courseAPI, studentAPI, enrollmentAPI } from "../services/api";
 import { FaDownload, FaFilePdf, FaFileCsv } from "react-icons/fa";
+import { useNotify, formatApiError } from "../context/NotificationContext";
 import "../styles/table.css";
 
 export default function Attendance() {
+  const { notify } = useNotify();
   const [records, setRecords] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,8 +69,9 @@ export default function Attendance() {
       await attendanceAPI.markBulk(payload);
       setShowBulkModal(false);
       loadRecords();
+      notify("Attendance saved.", "success");
     } catch (err) {
-      alert(JSON.stringify(err.response?.data));
+      notify(formatApiError(err, "Could not save attendance."), "error");
     }
   };
 

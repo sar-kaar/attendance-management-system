@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { studentAPI } from "../services/api";
 import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
+import { useNotify, formatApiError } from "../context/NotificationContext";
 import "../styles/table.css";
 
 export default function Students() {
+  const { notify, confirm } = useNotify();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -43,11 +45,12 @@ export default function Students() {
         await studentAPI.create(form);
       }
       setShowModal(false);
-      setEditStudent(null);
       resetForm();
       loadStudents();
+      notify(editStudent ? "Student updated." : "Student added.", "success");
+      setEditStudent(null);
     } catch (err) {
-      alert(JSON.stringify(err.response?.data));
+      notify(formatApiError(err, "Could not save the student."), "error");
     }
   };
 
@@ -68,9 +71,20 @@ export default function Students() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Delete this student?")) return;
-    await studentAPI.delete(id);
-    loadStudents();
+    const ok = await confirm({
+      title: "Delete student?",
+      message: "Their enrollments and attendance history may be affected. This cannot be undone.",
+      confirmText: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await studentAPI.delete(id);
+      loadStudents();
+      notify("Student deleted.", "success");
+    } catch (err) {
+      notify(formatApiError(err, "Could not delete the student."), "error");
+    }
   };
 
   const resetForm = () => {
