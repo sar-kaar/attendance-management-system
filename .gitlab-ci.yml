@@ -89,37 +89,12 @@ deploy-backend:
         echo "EMAIL_HOST_PASSWORD not set - skipping email settings sync."
       fi
     - python3 -c "import shutil; shutil.make_archive('backend', 'zip', 'backend')"
-    - |
-      # Azure's front door enforces a fixed ~230s limit on the synchronous
-      # HTTP call `az webapp deploy` makes, regardless of --timeout - Oryx
-      # keeps rebuilding numpy/pandas/dlib-bin on the B1 instance in the
-      # background and the deploy succeeds seconds later, but the CLI call
-      # itself already got cut with an HTTP 504. Raising --timeout does not
-      # help because it governs the CLI's own wait, not this front-door limit.
-      #
-      # --async returns immediately after the zip is uploaded, then we poll
-      # the deployment log ourselves. LAST_LINE is the log length BEFORE this
-      # deploy starts, so the poll only looks at entries strictly after it -
-      # otherwise a leftover "Deployment successful" from the PREVIOUS deploy
-      # would be misread as this one finishing instantly.
-      LAST_LINE=$(az webapp log deployment show --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --query "length(@)" -o tsv)
-      az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src-path backend.zip --type zip --async true
-      echo "Deploy triggered (async). Polling for completion (baseline: $LAST_LINE log lines)..."
-      for i in $(seq 1 60); do
-        sleep 15
-        NEW=$(az webapp log deployment show --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --query "[${LAST_LINE}:].message" -o tsv 2>/dev/null)
-        [ -n "$NEW" ] && echo "$NEW"
-        if echo "$NEW" | grep -q "Deployment successful"; then
-          echo "Deployment confirmed successful."
-          exit 0
-        fi
-        if echo "$NEW" | grep -qi "Deployment failed\|^ERROR:"; then
-          echo "Deployment failed - see log above."
-          exit 1
-        fi
-      done
-      echo "Timed out after 15 min waiting for deployment confirmation."
-      exit 1
+    # --async true: upload the zip, then let the CLI track build/start via short
+    # ARM status polls. A plain synchronous deploy holds one HTTP request open
+    # while Oryx rebuilds numpy/dlib-bin (often >230s on B1), and Azure's front
+    # door cuts that request off - false-failing the job even though the deploy
+    # succeeds. The CLI's own tracking exits 0/1 based on the real final status.
+    - az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src-path backend.zip --type zip --async true
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   needs:
