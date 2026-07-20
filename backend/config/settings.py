@@ -115,6 +115,8 @@ CORS_ALLOWED_ORIGINS = config(
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
+FRONTEND_URL = config('FRONTEND_URL', default='https://amsfrontendweb.z23.web.core.windows.net/')
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
