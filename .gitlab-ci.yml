@@ -62,7 +62,12 @@ deploy-backend:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password="$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
     - az account set --subscription "$AZURE_SUBSCRIPTION_ID"
     - python3 -c "import shutil; shutil.make_archive('backend', 'zip', 'backend')"
-    - az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src-path backend.zip --type zip
+    # --async true: upload the zip, then let the CLI track build/start via short
+    # ARM status polls. A plain synchronous deploy holds one HTTP request open
+    # while Oryx rebuilds numpy/dlib-bin (often >230s on B1), and Azure's front
+    # door cuts that request off - false-failing the job even though the deploy
+    # succeeds. The CLI's own tracking exits 0/1 based on the real final status.
+    - az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src-path backend.zip --type zip --async true
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   needs:
