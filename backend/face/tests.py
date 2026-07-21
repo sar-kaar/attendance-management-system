@@ -33,6 +33,12 @@ def _fake_encoding():
     return np.random.rand(128).tolist()
 
 
+NO_FACE_ERROR = (
+    {'error': 'No face detected in the image. Please upload a clear photo with a visible face.'},
+    400,
+)
+
+
 class FaceRegisterTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -44,9 +50,9 @@ class FaceRegisterTests(TestCase):
             first_name='Face', last_name='Test', email='face@test.com', student_id='F001'
         )
 
-    @patch('face.views._encode_image')
-    def test_register_face_success(self, mock_encode):
-        mock_encode.return_value = np.random.rand(128)
+    @patch('face.views._persist_face')
+    def test_register_face_success(self, mock_persist):
+        mock_persist.return_value = np.random.rand(128).tolist()
         resp = self.client.post('/api/face/register/', {
             'student_id': 'F001',
             'image': _mock_face_image(),
@@ -61,16 +67,16 @@ class FaceRegisterTests(TestCase):
         self.assertEqual(resp.status_code, 400)
 
     def test_register_face_student_not_found(self):
-        with patch('face.views._encode_image', return_value=np.random.rand(128)):
+        with patch('face.views._persist_face', return_value=np.random.rand(128).tolist()):
             resp = self.client.post('/api/face/register/', {
                 'student_id': 'NONEXISTENT',
                 'image': _mock_face_image(),
             }, format='multipart')
             self.assertEqual(resp.status_code, 404)
 
-    @patch('face.views._encode_image')
-    def test_register_face_no_face_detected(self, mock_encode):
-        mock_encode.return_value = None
+    @patch('face.views._persist_face')
+    def test_register_face_no_face_detected(self, mock_persist):
+        mock_persist.return_value = None
         resp = self.client.post('/api/face/register/', {
             'student_id': 'F001',
             'image': _mock_face_image(),
@@ -93,9 +99,9 @@ class FaceRecognizeTests(TestCase):
         )
 
     @patch('face_recognition.face_distance')
-    @patch('face.views._encode_image')
-    def test_recognize_match(self, mock_encode, mock_distance):
-        mock_encode.return_value = self.known_enc.copy()
+    @patch('face.views._extract_probe')
+    def test_recognize_match(self, mock_probe, mock_distance):
+        mock_probe.return_value = (self.known_enc.copy(), None)
         mock_distance.return_value = np.array([0.3])
         resp = self.client.post('/api/face/recognize/', {
             'image': _mock_face_image(),
@@ -105,9 +111,9 @@ class FaceRecognizeTests(TestCase):
         self.assertEqual(resp.data['student_id'], 'R001')
 
     @patch('face_recognition.face_distance')
-    @patch('face.views._encode_image')
-    def test_recognize_no_match(self, mock_encode, mock_distance):
-        mock_encode.return_value = np.random.rand(128)
+    @patch('face.views._extract_probe')
+    def test_recognize_no_match(self, mock_probe, mock_distance):
+        mock_probe.return_value = (np.random.rand(128), None)
         mock_distance.return_value = np.array([0.9])
         resp = self.client.post('/api/face/recognize/', {
             'image': _mock_face_image(),
@@ -119,9 +125,9 @@ class FaceRecognizeTests(TestCase):
         resp = self.client.post('/api/face/recognize/', {}, format='multipart')
         self.assertEqual(resp.status_code, 400)
 
-    @patch('face.views._encode_image')
-    def test_recognize_no_face_in_image(self, mock_encode):
-        mock_encode.return_value = None
+    @patch('face.views._extract_probe')
+    def test_recognize_no_face_in_image(self, mock_probe):
+        mock_probe.return_value = (None, NO_FACE_ERROR)
         resp = self.client.post('/api/face/recognize/', {
             'image': _mock_face_image(),
         }, format='multipart')
@@ -129,7 +135,7 @@ class FaceRecognizeTests(TestCase):
 
     def test_recognize_no_registered_faces(self):
         Student.objects.all().delete()
-        with patch('face.views._encode_image', return_value=np.random.rand(128)):
+        with patch('face.views._extract_probe', return_value=(np.random.rand(128), None)):
             resp = self.client.post('/api/face/recognize/', {
                 'image': _mock_face_image(),
             }, format='multipart')
@@ -152,9 +158,9 @@ class FaceAttendanceTests(TestCase):
         Enrollment.objects.create(student=self.student, course=self.course)
 
     @patch('face_recognition.face_distance')
-    @patch('face.views._encode_image')
-    def test_mark_attendance_success(self, mock_encode, mock_distance):
-        mock_encode.return_value = self.known_enc.copy()
+    @patch('face.views._extract_probe')
+    def test_mark_attendance_success(self, mock_probe, mock_distance):
+        mock_probe.return_value = (self.known_enc.copy(), None)
         mock_distance.return_value = np.array([0.3])
         resp = self.client.post('/api/face/mark-attendance/', {
             'course_id': self.course.id,
@@ -167,8 +173,8 @@ class FaceAttendanceTests(TestCase):
         ).exists())
 
     @patch('face_recognition.face_distance')
-    @patch('face.views._encode_image')
-    def test_mark_attendance_not_enrolled(self, mock_encode, mock_distance):
+    @patch('face.views._extract_probe')
+    def test_mark_attendance_not_enrolled(self, mock_probe, mock_distance):
         new_enc = np.random.rand(128)
         # Remove face encoding from enrolled student so only unenrolled student matches
         self.student.face_encoding = None
@@ -177,7 +183,7 @@ class FaceAttendanceTests(TestCase):
             first_name='Not', last_name='Enrolled', email='ne@test.com', student_id='NE001',
             face_encoding=json.dumps(new_enc.tolist()),
         )
-        mock_encode.return_value = new_enc
+        mock_probe.return_value = (new_enc, None)
         mock_distance.return_value = np.array([0.3])
         resp = self.client.post('/api/face/mark-attendance/', {
             'course_id': self.course.id,
@@ -192,7 +198,7 @@ class FaceAttendanceTests(TestCase):
         self.assertEqual(resp.status_code, 400)
 
     def test_mark_attendance_course_not_found(self):
-        with patch('face.views._encode_image', return_value=np.random.rand(128)):
+        with patch('face.views._extract_probe', return_value=(np.random.rand(128), None)):
             resp = self.client.post('/api/face/mark-attendance/', {
                 'course_id': 9999,
                 'image': _mock_face_image(),
