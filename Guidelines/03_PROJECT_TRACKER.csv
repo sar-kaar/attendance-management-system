@@ -1,0 +1,52 @@
+Task ID,Task Name,Sprint,Assigned To,Priority,Status,Story Points,Start Date,End Date,Dependencies,Notes
+T-001,Project Setup & Tools,Sprint 0,Prizma Subedi,High,Done,2,7/7/2026,7/8/2026,-,GitHub Trello Dev env
+T-002,Requirements Gathering,Sprint 0,Prizma Subedi,High,Done,3,7/8/2026,7/10/2026,T-001,User interviews brainstorming
+T-003,SRS Document,Sprint 0,Prizma Subedi,Critical,Done,5,7/10/2026,7/12/2026,T-002,IEEE 830 format
+T-004,Database Schema Design,Sprint 0,Abhishek Rokaya,High,Done,3,7/13/2026,7/14/2026,T-003,ER diagram
+T-005,Wireframes & Mockups,Sprint 0,Ekata Rimal,High,Done,3,7/13/2026,7/15/2026,T-003,All pages
+T-006,System Architecture Design,Sprint 0,Abhishek Rokaya,High,Done,2,7/14/2026,7/15/2026,T-004,Architecture diagram
+T-007,Project Charter,Sprint 0,Prizma Subedi,High,Done,3,7/14/2026,7/17/2026,T-002,Signed document
+T-008,User Registration API,Sprint 1,Abhishek Rokaya,Critical,In Progress,3,7/20/2026,7/22/2026,T-004,POST /api/register
+T-009,User Login API,Sprint 1,Abhishek Rokaya,Critical,In Progress,3,7/22/2026,7/24/2026,T-008,POST /api/login JWT
+T-010,RBAC Middleware,Sprint 1,Abhishek Rokaya,High,Not Started,3,7/24/2026,7/26/2026,T-009,Role-based access
+T-011,Login Page UI,Sprint 1,Ekata Rimal,Critical,In Progress,2,7/20/2026,7/22/2026,T-003,React login form
+T-012,Registration Page UI,Sprint 1,Ekata Rimal,High,In Progress,2,7/22/2026,7/24/2026,T-011,React register form
+T-013,Dashboard Shell UI,Sprint 1,Ekata Rimal,Medium,Not Started,2,7/24/2026,7/26/2026,"T-010 T-012",Layout sidebar header
+T-014,Student CRUD API,Sprint 2,Abhishek Rokaya,High,Not Started,5,7/27/2026,7/30/2026,T-009,Full CRUD endpoints
+T-015,Course CRUD API,Sprint 2,Abhishek Rokaya,High,Not Started,3,7/30/2026,8/1/2026,T-014,Course management
+T-016,Manual Attendance API,Sprint 2,Abhishek Rokaya,Critical,Not Started,5,8/1/2026,8/3/2026,T-015,Mark and get attendance
+T-017,Student Management UI,Sprint 2,Ekata Rimal,High,Not Started,3,7/27/2026,7/30/2026,T-014,"List add edit delete"
+T-018,Course Management UI,Sprint 2,Ekata Rimal,High,Not Started,3,7/30/2026,8/1/2026,T-015,Course list and form
+T-019,Attendance Marking UI,Sprint 2,Ekata Rimal,Critical,Not Started,5,8/1/2026,8/3/2026,T-016,Mark attendance page
+T-020,Face Registration API,Sprint 3,Abhishek Rokaya,Critical,Not Started,5,8/3/2026,8/6/2026,T-016,Store face encodings
+T-021,Face Recognition Engine,Sprint 3,Abhishek Rokaya,Critical,Not Started,8,8/6/2026,8/10/2026,T-020,OpenCV integration
+T-022,Camera Component UI,Sprint 3,Ekata Rimal,Critical,Not Started,3,8/3/2026,8/5/2026,T-020,WebRTC camera
+T-023,Face Registration UI,Sprint 3,Ekata Rimal,High,Not Started,3,8/5/2026,8/7/2026,T-022,Capture and register face
+T-024,Auto Attendance UI,Sprint 3,Ekata Rimal,Critical,Not Started,5,8/7/2026,8/10/2026,"T-021 T-023",Recognize and mark
+T-025,Report Generation API,Sprint 4,Abhishek Rokaya,High,Not Started,3,8/10/2026,8/12/2026,T-016,Attendance reports
+T-026,CSV/PDF Export API,Sprint 4,Abhishek Rokaya,Medium,Not Started,3,8/12/2026,8/14/2026,T-025,Export endpoints
+T-027,Dashboard with Charts,Sprint 4,Ekata Rimal,High,Not Started,5,8/10/2026,8/14/2026,T-025,Chart.js integration
+T-028,Student Attendance View,Sprint 4,Ekata Rimal,Medium,Not Started,3,8/13/2026,8/15/2026,T-026,Student dashboard
+T-029,System Testing,Sprint 5,Prizma Subedi,Critical,Not Started,5,8/17/2026,8/19/2026,ALL,Full test suite
+T-030,Bug Fixing,Sprint 5,Abhishek Rokaya,High,Not Started,5,8/17/2026,8/20/2026,T-029,Fix reported bugs
+T-031,Deployment,Sprint 5,Abhishek Rokaya,Critical,Not Started,5,8/19/2026,8/21/2026,T-030,Production deploy
+T-032,User Manual,Sprint 5,Ekata Rimal,High,Not Started,3,8/17/2026,8/20/2026,ALL,End-user docs
+T-033,Final Report,Sprint 5,Prizma Subedi,Critical,Not Started,8,8/17/2026,8/23/2026,ALL,Complete project report
+T-034,Presentation,Sprint 5,Prizma Subedi,Critical,Not Started,5,8/20/2026,8/24/2026,T-033,15-min presentation
+T-035,API Documentation,Sprint 5,Abhishek Rokaya,Medium,Not Started,3,8/21/2026,8/23/2026,ALL,API reference
+T-036,Final Project Submission,Sprint 5,Prizma Subedi,Critical,Not Started,1,8/25/2026,8/25/2026,ALL,Submit all deliverables
+T-037,Database Seeding Scripts,Sprint 2,Abhishek Rokaya,Medium,Not Started,2,8/1/2026,8/2/2026,T-016,Sample data for testing
+T-038,Email Notification Service,Sprint 4,Abhishek Rokaya,Low,Not Started,3,8/12/2026,8/14/2026,T-025,Send attendance alerts
+T-039,Password Reset Feature,Sprint 1,Abhishek Rokaya,Medium,Not Started,2,7/25/2026,7/26/2026,T-009,POST /api/reset-password
+T-040,Responsive Mobile Styles,Sprint 4,Ekata Rimal,Low,Not Started,3,8/14/2026,8/16/2026,T-027,Mobile-friendly UI
+T-041,Load Testing,Sprint 5,Abhishek Rokaya,Medium,Not Started,3,8/20/2026,8/22/2026,T-030,k6 stress tests
+T-042,Docker Containerization,Sprint 5,Abhishek Rokaya,Low,Not Started,5,8/22/2026,8/25/2026,T-031,Docker compose setup
+---SPRINT SUMMARY---
+Sprint,Total Tasks,Done,In Progress,Not Started,Total Story Points,Completed Points,Completion %
+Sprint 0,7,7,0,0,21,21,100
+Sprint 1,6,0,3,3,14,0,0
+Sprint 2,7,0,0,7,26,0,0
+Sprint 3,5,0,0,5,24,0,0
+Sprint 4,5,0,0,5,17,0,0
+Sprint 5,12,0,0,12,51,0,0
+TOTAL,42,7,3,32,153,21,14
