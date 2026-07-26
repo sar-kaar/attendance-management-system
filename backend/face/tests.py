@@ -1,14 +1,16 @@
-import json
 import io
+import json
 import sys
+from unittest.mock import MagicMock, patch
+
 import numpy as np
-from unittest.mock import patch, MagicMock
-from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
+from django.test import TestCase
 from rest_framework.test import APIClient
-from students.models import Student
-from courses.models import Course, Enrollment
+
 from attendance.models import Attendance
+from courses.models import Course, Enrollment
+from students.models import Student
 
 try:
     import face_recognition  # noqa: F401

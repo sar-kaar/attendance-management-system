@@ -1,8 +1,7 @@
 from rest_framework import serializers
+
+from courses.models import Enrollment
 from students.models import Student
-from courses.models import Course, Enrollment
-from attendance.models import Attendance
-from accounts.models import User
 
 
 class ProgramSerializer(serializers.Serializer):

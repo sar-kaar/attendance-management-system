@@ -1,6 +1,8 @@
 from rest_framework import serializers
-from .models import Attendance, AttendanceCode
+
 from courses.models import Enrollment
+
+from .models import Attendance, AttendanceCode
 
 
 class AttendanceCodeSerializer(serializers.ModelSerializer):

@@ -34,6 +34,7 @@ Backend and frontend are **both substantially built and deployed** (Azure App Se
 - Repo hygiene: removed committed-nowhere secret files and cache/log noise from the working tree (see Files Modified/Created below).
 - **Phase 1 — Repository Stabilization (2026-07-26)**: audited backend (`manage.py check` clean, `makemigrations --check --dry-run` clean — no schema drift) and frontend (`vite build` succeeds; only a non-blocking >500kB chunk-size advisory, not an error). Removed genuine dead code flagged by ESLint `no-unused-vars`: unused `enrolledStudents` state (setter was called but the value was never read), unused `studentAPI`/`FaDownload` imports in `frontend/src/pages/Attendance.jsx`, and unused `FaUserCircle` import in `frontend/src/pages/StudentDashboard.jsx`. Lint errors dropped from 15 to 11.
 - **Phase 1 follow-up — lint error suppression (2026-07-26)**: resolved the remaining 11 ESLint errors (`react-hooks/set-state-in-effect` x8, `react-refresh/only-export-components` x3) with targeted `eslint-disable-next-line` comments, each carrying a short reason, at every flagged line — user's explicit decision, chosen over restructuring the effect/export patterns (would touch behavior-adjacent code across 8+ files) or disabling the rules globally (would silence the rules for genuinely new bugs too). Zero behavior change; verified via `eslint .` (0 errors, 2 pre-existing unrelated `exhaustive-deps` warnings remain, untouched) and `vite build` (still succeeds). Lint errors now at 0.
+- **Backend `ruff` added (2026-07-26)**: `backend/pyproject.toml` (config: line-length 100, `E`/`F`/`W`/`I` rules, `E501` ignored, `migrations/` excluded) + `backend/requirements-dev.txt` (dev-only, `ruff` pinned). Initial run found 71 issues; auto-fixed 67 safe ones (`I001` unsorted imports, `F401` unused imports, `W292` missing EOF newline). Manually cleaned 3 more dead-code `F841` unused-variable findings (`accounts/tests.py`, `attendance/tests.py` — unused test-fixture assignments, values only needed for their side effect) and renamed an `E741` ambiguous variable `l`→`line` in `backend/scripts/inventory_sources.py`. 2 `F841` findings in `attendance/views.py` deliberately left unfixed — see Technical Debt (they're a real bug, not dead code). Verified with `manage.py check`, `makemigrations --check --dry-run`, and the full test suite (73 tests, all passing) after the cleanup. Not yet wired into CI.
 
 ## Pending Features
 
@@ -58,7 +59,8 @@ Backend and frontend are **both substantially built and deployed** (Azure App Se
 
 ## Technical Debt
 
-- No Python linter/formatter configured for `backend/` (no `ruff`/`black`/`flake8`) — see [rules.md](rules.md) and [phases.md](phases.md) Phase 10 atomic tasks.
+- ~~No Python linter configured for `backend/`~~ — resolved 2026-07-26: `ruff` added (`backend/pyproject.toml`, `backend/requirements-dev.txt`), see Files Modified/Created. Not yet CI-enforced (matches frontend ESLint's current state — see [release-process.md](release-process.md) Code Quality Gates); wiring into CI is a separate follow-up task.
+- **Bug found by the ruff pass, not fixed yet**: `AttendanceViewSet.report` (`backend/attendance/views.py:118-122`) reads `course`/`student` query params into `course_id`/`student_id` but never applies them as filters to the queryset — only `start_date`/`end_date` actually filter. Callers attempting to filter the report by course or student silently get unfiltered totals instead. Left untouched deliberately: fixing it changes API response behavior, which is outside a lint-cleanup's scope — needs its own reviewed bug-fix task (see [development-guide.md](development-guide.md) Bug Fix workflow: add a regression test first, then fix).
 - No frontend automated test suite (Vitest/RTL not set up) — see [testing.md](testing.md).
 - No coverage gate in CI (backend tests run, but no minimum-coverage enforcement).
 - `Student` (in `students` app) and `accounts.User` (role=`student`) are not FK-linked — a design gap noted in `docs/database-schema.md`, not yet resolved.
@@ -90,6 +92,11 @@ See [decisions.md](decisions.md) for full ADRs. Most recent: ADR-007 (this memor
 - `frontend/src/pages/AttendanceCodes.jsx`, `Courses.jsx`, `Students.jsx` — added `eslint-disable-next-line react-hooks/set-state-in-effect` on each fetch-on-mount effect (Phase 1 follow-up, 2026-07-26).
 - `frontend/src/pages/Enrollments.jsx` — added `eslint-disable-next-line react-hooks/set-state-in-effect` on the fetch-on-filter-change effect, alongside the pre-existing `exhaustive-deps` disable (Phase 1 follow-up, 2026-07-26).
 - `frontend/src/pages/FaceRecognition.jsx` — added `eslint-disable-next-line react-hooks/set-state-in-effect` on the search-results-clear effect (Phase 1 follow-up, 2026-07-26).
+- `backend/accounts/tests.py`, `backend/attendance/tests.py` — dropped unused variable assignments on side-effect-only test fixture calls (ruff `F841`, 2026-07-26).
+- `backend/scripts/inventory_sources.py` — renamed ambiguous variable `l` to `line` (ruff `E741`, 2026-07-26).
+- 13 backend files across `accounts/`, `attendance/`, `courses/`, `dashboard/`, `face/`, `students/`, `config/` — ruff `--fix` applied: import sorting/grouping and removal of unused imports, no logic changes (2026-07-26).
+
+**Created** (backend tooling, 2026-07-26): `backend/pyproject.toml`, `backend/requirements-dev.txt`.
 
 (Prior to Phase 1, application code was untouched by the docs/hygiene effort.)
 
@@ -108,10 +115,11 @@ Branch: `ams`. Prior session's `HANDOFF.md` (2026-07-20) noted `develop` was ahe
 
 ## Next Recommended Tasks
 
-1. Add a Python lint/format config (`ruff` recommended — single tool, fast) to `backend/` and wire into both CI configs.
-2. Verify `FACE_PROVIDER=azure` end-to-end against a real Azure Face resource (see [decisions.md](decisions.md) ADR-002 consequences).
-3. Stand up a minimal Vitest smoke test for the frontend so a test step can be added to CI.
-4. Retire or refresh `Guidelines/03_PROJECT_TRACKER.csv`.
+1. Fix the `AttendanceViewSet.report` filter bug (see Technical Debt) — `course`/`student` query params are accepted but silently ignored.
+2. Wire `ruff check` into `.gitlab-ci.yml` and `.github/workflows/ci.yml` (config and dev-dependency already in place, not yet CI-enforced).
+3. Verify `FACE_PROVIDER=azure` end-to-end against a real Azure Face resource (see [decisions.md](decisions.md) ADR-002 consequences).
+4. Stand up a minimal Vitest smoke test for the frontend so a test step can be added to CI.
+5. Retire or refresh `Guidelines/03_PROJECT_TRACKER.csv`.
 
 ## Important Implementation Notes
 

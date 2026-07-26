@@ -1,11 +1,13 @@
-from django.test import TestCase
-from rest_framework.test import APIClient
-from rest_framework import status
-from django.utils import timezone
 from datetime import date, timedelta
+
+from django.test import TestCase
+from rest_framework import status
+from rest_framework.test import APIClient
+
 from accounts.models import User
-from students.models import Student
 from courses.models import Course, Enrollment
+from students.models import Student
+
 from .models import Attendance
 
 
@@ -72,6 +74,41 @@ class AttendanceViewSetTest(TestCase):
         response = self.client.post('/api/attendance/', self.attendance_data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_report_filters_by_course(self):
+        self.client.force_authenticate(user=self.admin)
+        other_course = Course.objects.create(
+            name='Data Structures', code='CSE201', faculty=self.faculty
+        )
+        Attendance.objects.create(
+            student=self.student, course=self.course, date=self.today, status='present'
+        )
+        Attendance.objects.create(
+            student=self.student, course=other_course, date=self.today, status='absent'
+        )
+        response = self.client.get(f'/api/attendance/report/?course={self.course.id}')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['total_records'], 1)
+        self.assertEqual(response.data['present'], 1)
+        self.assertEqual(response.data['absent'], 0)
+
+    def test_report_filters_by_student(self):
+        self.client.force_authenticate(user=self.admin)
+        other_student = Student.objects.create(
+            first_name='Jane', last_name='Smith',
+            email='jane@test.com', student_id='STU002'
+        )
+        Attendance.objects.create(
+            student=self.student, course=self.course, date=self.today, status='present'
+        )
+        Attendance.objects.create(
+            student=other_student, course=self.course, date=self.today, status='absent'
+        )
+        response = self.client.get(f'/api/attendance/report/?student={self.student.id}')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['total_records'], 1)
+        self.assertEqual(response.data['present'], 1)
+        self.assertEqual(response.data['absent'], 0)
+
 
 class BulkAttendanceTest(TestCase):
     def setUp(self):
@@ -113,7 +150,7 @@ class BulkAttendanceTest(TestCase):
         self.assertEqual(len(response.data['skipped']), 0)
 
     def test_bulk_mark_skips_unenrolled(self):
-        unenrolled = Student.objects.create(
+        Student.objects.create(
             first_name='Bob', last_name='Lee',
             email='bob@test.com', student_id='STU003'
         )

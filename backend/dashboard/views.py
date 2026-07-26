@@ -1,18 +1,24 @@
-from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.response import Response
 from django.db import transaction
-from django.db.models import Count, Q, F, Value
-from django.db.models.functions import Coalesce
-from students.models import Student
-from courses.models import Course, Enrollment
-from attendance.models import Attendance
+from django.db.models import Count, F, Q
+from rest_framework import permissions
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+
 from accounts.models import User
+from attendance.models import Attendance
+from courses.models import Course, Enrollment
+from students.models import Student
+
 from .serializers import (
-    ProgramSerializer, SectionSerializer, StudentSearchResultSerializer,
-    StudentAttendanceBreakdownSerializer, AttendanceStatsSerializer,
-    AtRiskStudentSerializer, FacultyPerformanceSerializer,
-    ChronicLatecomerSerializer, IncompleteRecordSerializer,
+    AtRiskStudentSerializer,
+    AttendanceStatsSerializer,
+    ChronicLatecomerSerializer,
+    FacultyPerformanceSerializer,
+    IncompleteRecordSerializer,
+    ProgramSerializer,
+    SectionSerializer,
+    StudentAttendanceBreakdownSerializer,
+    StudentSearchResultSerializer,
 )
 
 

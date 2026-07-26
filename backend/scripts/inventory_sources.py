@@ -27,7 +27,7 @@ PATTERNS = [
 def scan(path):
     print(f'\n{"=" * 70}\nFILE: {path.name}  ({path.stat().st_size} bytes)')
     text = path.read_text(encoding='utf-8', errors='ignore')
-    lines = [l for l in text.splitlines() if l.strip()]
+    lines = [line for line in text.splitlines() if line.strip()]
     print(f'non-empty lines: {len(lines)}')
 
     if path.suffix == '.json':

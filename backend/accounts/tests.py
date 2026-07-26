@@ -1,12 +1,14 @@
 from unittest.mock import patch
-from django.test import TestCase, override_settings
-from django.core.cache import cache
-from rest_framework.test import APIClient
-from rest_framework import status
+
 from django.core import mail
-from .models import User, OTP
+from django.core.cache import cache
+from django.test import TestCase, override_settings
+from rest_framework import status
+from rest_framework.test import APIClient
+
+from .models import User
 from .services import OTPService
-from .social import SocialAuthError, verify_google_token, verify_facebook_token
+from .social import SocialAuthError, verify_facebook_token, verify_google_token
 
 
 class RegistrationTest(TestCase):
@@ -195,7 +197,7 @@ class OTPTest(TestCase):
         self.assertTrue(otp.is_used)
 
     def test_otp_service_verify_wrong_code(self):
-        otp = OTPService.create_otp('test@example.com', 'email_verification')
+        OTPService.create_otp('test@example.com', 'email_verification')
         success, message = OTPService.verify_otp('test@example.com', '000000', 'email_verification')
         self.assertFalse(success)
         self.assertIn('Invalid code', message)

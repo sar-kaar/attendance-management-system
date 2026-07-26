@@ -1,9 +1,10 @@
 import logging
 import secrets
 
-from django.utils import timezone
 from django.conf import settings
 from django.core.mail import send_mail
+from django.utils import timezone
+
 from .models import OTP
 
 logger = logging.getLogger(__name__)
