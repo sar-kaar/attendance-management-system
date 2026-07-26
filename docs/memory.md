@@ -60,8 +60,13 @@ Backend and frontend are **both substantially built and deployed** (Azure App Se
 
 ## Technical Debt
 
+<<<<<<< HEAD
 - ~~No Python linter configured for `backend/`~~ — resolved 2026-07-26: `ruff` added and CI-enforced in both `.gitlab-ci.yml` and `.github/workflows/ci.yml` (see Completed Features and Files Modified/Created).
 - ~~Bug found by the ruff pass~~ — re-investigated 2026-07-26 and reclassified: not a bug. `report()`'s `qs = self.get_queryset()` call already applies `course`/`student` filtering (via `get_queryset()`'s own query-param handling), so the two local vars were dead code, not a missing filter. Resolved — see Completed Features.
+=======
+- ~~No Python linter configured for `backend/`~~ — resolved 2026-07-26: `ruff` added (`backend/pyproject.toml`, `backend/requirements-dev.txt`), see Files Modified/Created. Not yet CI-enforced (matches frontend ESLint's current state — see [release-process.md](release-process.md) Code Quality Gates); wiring into CI is a separate follow-up task.
+- **Bug found by the ruff pass, not fixed yet**: `AttendanceViewSet.report` (`backend/attendance/views.py:118-122`) reads `course`/`student` query params into `course_id`/`student_id` but never applies them as filters to the queryset — only `start_date`/`end_date` actually filter. Callers attempting to filter the report by course or student silently get unfiltered totals instead. Left untouched deliberately: fixing it changes API response behavior, which is outside a lint-cleanup's scope — needs its own reviewed bug-fix task (see [development-guide.md](development-guide.md) Bug Fix workflow: add a regression test first, then fix).
+>>>>>>> 33d4496 (chore: add ruff to backend, fix lint findings, wire into CI)
 - No frontend automated test suite (Vitest/RTL not set up) — see [testing.md](testing.md).
 - No coverage gate in CI (backend tests run, but no minimum-coverage enforcement).
 - `Student` (in `students` app) and `accounts.User` (role=`student`) are not FK-linked — a design gap noted in `docs/database-schema.md`, not yet resolved.
@@ -116,8 +121,14 @@ Branch: `ams`. Prior session's `HANDOFF.md` (2026-07-20) noted `develop` was ahe
 
 ## Next Recommended Tasks
 
+<<<<<<< HEAD
 1. Merge `fix/attendance-report-filter` (ruff + CI wiring + report dead-code cleanup + regression tests) into `develop`/`main` via PR — currently pushed but not merged.
 2. Verify `FACE_PROVIDER=azure` end-to-end against a real Azure Face resource (see [decisions.md](decisions.md) ADR-002 consequences).
+=======
+1. Fix the `AttendanceViewSet.report` filter bug (see Technical Debt) — `course`/`student` query params are accepted but silently ignored.
+2. Wire `ruff check` into `.gitlab-ci.yml` and `.github/workflows/ci.yml` (config and dev-dependency already in place, not yet CI-enforced).
+3. Verify `FACE_PROVIDER=azure` end-to-end against a real Azure Face resource (see [decisions.md](decisions.md) ADR-002 consequences).
+>>>>>>> 33d4496 (chore: add ruff to backend, fix lint findings, wire into CI)
 4. Stand up a minimal Vitest smoke test for the frontend so a test step can be added to CI.
 5. Retire or refresh `Guidelines/03_PROJECT_TRACKER.csv`.
 
