@@ -19,6 +19,7 @@ export function AuthProvider({ children }) {
         })
         .finally(() => setLoading(false));
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- initial auth check on mount, no external state to sync against
       setLoading(false);
     }
   }, []);
@@ -54,4 +55,5 @@ export function AuthProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook colocated with its Provider, standard Context pattern
 export const useAuth = () => useContext(AuthContext);

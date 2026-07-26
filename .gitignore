@@ -52,7 +52,13 @@ schema.dot
 sqlite_mcp_server.db
 
 gitlabpat.txt
+gitlab.api
+gitlab-variables-*.txt
+brevo.txt
+brevo-authorized-ips.txt
+client_secret_*.json
 .claude/settings.local.json
 
 # Serena project index / memories (machine-local)
 .serena/
+.devswarm-temp/

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { attendanceAPI, courseAPI, studentAPI, enrollmentAPI } from "../services/api";
-import { FaDownload, FaFilePdf, FaFileCsv } from "react-icons/fa";
+import { attendanceAPI, courseAPI, enrollmentAPI } from "../services/api";
+import { FaFilePdf, FaFileCsv } from "react-icons/fa";
 import { useNotify, formatApiError } from "../context/NotificationContext";
 import "../styles/table.css";
 
@@ -12,7 +12,6 @@ export default function Attendance() {
   const [filters, setFilters] = useState({ course: "", date: "" });
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkForm, setBulkForm] = useState({ course_id: "", date: "", records: [] });
-  const [enrolledStudents, setEnrolledStudents] = useState([]);
 
   const loadRecords = () => {
     setLoading(true);
@@ -31,23 +30,16 @@ export default function Attendance() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount/filter-change, standard data-loading pattern
     loadRecords();
   }, [filters]);
 
   const loadEnrolled = async (courseId) => {
     if (!courseId) {
-      setEnrolledStudents([]);
       return;
     }
     const res = await enrollmentAPI.list({ course: courseId, is_active: "true" });
     const enrollments = res.data.results || res.data;
-    setEnrolledStudents(
-      enrollments.map((e) => ({
-        student_id: e.student_name,
-        student: e.student,
-        status: "present",
-      }))
-    );
     setBulkForm((prev) => ({
       ...prev,
       course_id: courseId,

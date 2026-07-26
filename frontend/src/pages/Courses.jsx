@@ -27,6 +27,7 @@ export default function Courses() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount, standard data-loading pattern
     loadCourses();
   }, []);
 

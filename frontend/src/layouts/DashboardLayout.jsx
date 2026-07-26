@@ -37,6 +37,7 @@ export default function DashboardLayout() {
   // Navigating must not leave the mobile drawer covering the page the user
   // just asked for.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs drawer state to route changes, not app-external state
     setDrawerOpen(false);
   }, [location.pathname]);
 

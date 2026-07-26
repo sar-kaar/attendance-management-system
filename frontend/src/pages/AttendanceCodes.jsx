@@ -25,6 +25,7 @@ export default function AttendanceCodes() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount, standard data-loading pattern
     loadCodes();
   }, []);
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { attendanceAPI } from "../services/api";
-import { FaSignOutAlt, FaUserCircle } from "react-icons/fa";
+import { FaSignOutAlt } from "react-icons/fa";
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import "../styles/dashboard.css";

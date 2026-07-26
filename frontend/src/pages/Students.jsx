@@ -33,6 +33,7 @@ export default function Students() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount/search-change, standard data-loading pattern
     loadStudents();
   }, [search]);
 

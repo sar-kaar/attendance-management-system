@@ -41,6 +41,7 @@ export default function FaceRecognition() {
   useEffect(() => {
     if (activeTab !== "register" || selectedStudent) return;
     if (studentQuery.trim().length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clears stale results when the search query is too short
       setStudentResults([]);
       return;
     }

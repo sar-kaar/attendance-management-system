@@ -19,6 +19,7 @@ const ICONS = {
  * JSON in front of the user. DRF returns either {field: [msg, ...]} or
  * {detail: msg}, so flatten both into plain sentences.
  */
+// eslint-disable-next-line react-refresh/only-export-components -- helper colocated with the context it formats errors for
 export function formatApiError(err, fallback = "Something went wrong.") {
   const data = err?.response?.data;
   if (!data) return err?.message || fallback;
@@ -161,6 +162,7 @@ export function NotificationProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook colocated with its Provider, standard Context pattern
 export function useNotify() {
   const ctx = useContext(NotificationContext);
   if (!ctx) throw new Error("useNotify must be used inside NotificationProvider");
