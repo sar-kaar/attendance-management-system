@@ -62,3 +62,14 @@ client_secret_*.json
 # Serena project index / memories (machine-local)
 .serena/
 .devswarm-temp/
+
+# Local agent tooling config (has its own lockfile/node_modules)
+.opencode/
+
+# Credentials template - meant to hold real values later, never commit
+EMAIL_OTP_SERVICES.md
+
+# Copyrighted/third-party reference material - redistribution risk
+Guidelines/Course Syllabus CSE 405.pdf
+Guidelines/Kathy Schwalbe - Information Technology Project Management-Cengage (2019) (2).pdf
+Guidelines/Sample of Last session_Project.xlsx
