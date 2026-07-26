@@ -14,6 +14,7 @@
 - [ADR-005: Dual CI — GitLab (deploy) + GitHub Actions (visibility)](#adr-005-dual-ci--gitlab-deploy--github-actions-visibility)
 - [ADR-006: Toast/confirm system replaces native `alert()`/`confirm()`](#adr-006-toastconfirm-system-replaces-native-alertconfirm)
 - [ADR-007: `docs/memory.md` supersedes `HANDOFF.md`/tracker docs as status source of truth](#adr-007-docsmemorymd-supersedes-handoffmdtracker-docs-as-status-source-of-truth)
+- [ADR-008: React Native/Expo for the mobile app](#adr-008-react-nativeexpo-for-the-mobile-app)
 
 ## ADR format
 
@@ -90,3 +91,17 @@ Each entry: **Decision**, **Context**, **Alternatives considered**, **Rationale*
 - **Alternatives considered**: Keep `HANDOFF.md` as the living doc (rejected — its own content flags itself as a snapshot, not a continuously-updated doc); delete stale docs outright (rejected — task constraints require preserving existing content, and they retain historical value).
 - **Rationale**: A single, explicitly-designated "update this after every major change" doc avoids the drift that produced the current stale-docs problem in the first place.
 - **Consequences**: Anyone (human or AI agent) finishing a non-trivial change should update `docs/memory.md` — see [rules.md](rules.md) Documentation section.
+
+## ADR-008: React Native/Expo for the mobile app
+
+- **Date**: 2026-07-26
+- **Status**: Accepted (planning stage — see [phases.md](phases.md) Phases 11–23, GitHub #34)
+- **Decision**: Build the mobile app in React Native, using the Expo managed workflow, rather than Flutter, separate native (Swift/Kotlin) apps, or a PWA.
+- **Context**: The Mobile Application epic (#34) needs one codebase covering iOS + Android, consuming the existing Django/DRF backend with no backend rewrite, built and maintained by a team that already knows React (the web frontend is React 19 + Vite).
+- **Alternatives considered**:
+  - **Flutter**: Excellent single-codebase cross-platform story, but Dart is a second language the team doesn't otherwise use — no code/skill reuse from the existing React frontend, and no one on the team has Flutter experience today.
+  - **Separate native apps (Swift + Kotlin)**: Best possible platform integration and performance, but doubles implementation and maintenance cost for a small team already carrying backend + web + PM/documentation load. Not justified by any requirement in [mobile-requirements.md](mobile-requirements.md) — nothing there needs native-only capability (e.g. no ARKit/complex sensor work).
+  - **Progressive Web App (PWA)**: Cheapest to ship (reuses `frontend/`'s React knowledge almost directly, no app-store review), but weak background push support on iOS, no reliable offline SQLite-grade local storage story, and no true native camera control needed for [mobile-architecture.md](mobile-architecture.md)'s face-recognition capture flow. Rejected primarily on MR-09 (push) and MR-10 (offline queue) in [mobile-requirements.md](mobile-requirements.md).
+  - **React Native, bare workflow (no Expo)**: Same language/framework benefits as the chosen option, but bare workflow means owning native build config (Xcode/Gradle) directly — Expo's managed workflow and EAS Build trade a small amount of native-module flexibility for a much lower CI/build maintenance burden, which matters more for a small team than it would for a large one. Can eject from managed to bare later if a specific native module demands it.
+- **Rationale**: React Native gives the team the highest code-reuse-of-existing-skill for the lowest added maintenance cost, and Expo's managed workflow minimizes the new native-build-tooling surface area the team has to learn and maintain, which matters given this is a small student team already running backend + web + dual CI/CD.
+- **Consequences**: New `mobile/` top-level project (see [mobile-architecture.md](mobile-architecture.md) Project Layout), TypeScript as the mobile language (web frontend stays plain JS — no requirement to unify), a new build/release pipeline via Expo EAS Build (Phase 23), and no shared component code between `frontend/` and `mobile/` (React DOM and React Native component trees aren't interchangeable — see [mobile-architecture.md](mobile-architecture.md) for what *is* shared: the API contract, not code). If a native module Expo's managed workflow doesn't support becomes a hard requirement later, revisit via `expo prebuild`/eject rather than a full rewrite.
