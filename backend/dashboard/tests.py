@@ -1,9 +1,10 @@
 from django.test import TestCase
-from rest_framework.test import APIClient
 from rest_framework import status
+from rest_framework.test import APIClient
+
 from accounts.models import User
-from students.models import Student
 from courses.models import Course, Enrollment
+from students.models import Student
 
 
 class FacultyScopingTest(TestCase):

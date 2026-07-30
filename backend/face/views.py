@@ -1,13 +1,16 @@
 import json
 import logging
+
+from django.utils import timezone
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from django.utils import timezone
-from students.models import Student
-from courses.models import Enrollment
+
 from attendance.models import Attendance
-from .providers import provider_name, FaceProcessingError
+from courses.models import Enrollment
+from students.models import Student
+
+from .providers import FaceProcessingError, provider_name
 
 logger = logging.getLogger(__name__)
 
@@ -122,8 +125,8 @@ def _find_best_match(probe, students, tolerance=0.6):
         return None, 0.0
 
     # local (dlib)
-    import numpy as np
     import face_recognition
+    import numpy as np
 
     best_match = None
     best_distance = float('inf')

@@ -1,11 +1,12 @@
 import random
 from datetime import date, timedelta
-from django.core.management.base import BaseCommand
-from accounts.models import User
-from students.models import Student
-from courses.models import Course, Enrollment
-from attendance.models import Attendance
 
+from django.core.management.base import BaseCommand
+
+from accounts.models import User
+from attendance.models import Attendance
+from courses.models import Course, Enrollment
+from students.models import Student
 
 PROGRAMS = ['BSc.CSIT', 'BIM', 'BCA']
 SECTIONS = ['A', 'B', 'C']

@@ -1,18 +1,21 @@
 import csv
 import io
-from rest_framework import viewsets, status, permissions
-from rest_framework.decorators import action
-from rest_framework.response import Response
+
 from django.http import HttpResponse
 from django.utils import timezone
-from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
-from .models import Attendance, AttendanceCode
-from .serializers import AttendanceSerializer, BulkAttendanceSerializer, AttendanceCodeSerializer
-from students.models import Student
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
 from courses.models import Course, Enrollment
+from students.models import Student
+
+from .models import Attendance, AttendanceCode
+from .serializers import AttendanceCodeSerializer, AttendanceSerializer, BulkAttendanceSerializer
 
 
 class IsAdminOrFaculty(permissions.BasePermission):
@@ -113,8 +116,8 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def report(self, request):
-        course_id = request.query_params.get('course')
-        student_id = request.query_params.get('student')
+        # course/student filtering is already applied by get_queryset() below,
+        # which reads the same query params.
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
         qs = self.get_queryset()

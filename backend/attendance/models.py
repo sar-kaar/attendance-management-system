@@ -1,6 +1,7 @@
 from django.db import models
-from students.models import Student
+
 from courses.models import Course
+from students.models import Student
 
 
 class AttendanceCode(models.Model):

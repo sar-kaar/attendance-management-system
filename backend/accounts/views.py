@@ -2,15 +2,22 @@ from rest_framework import generics, permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import (
-    RegisterSerializer, UserSerializer, AdminUserSerializer,
-    OTPSendSerializer, OTPVerifySerializer, SocialTokenSerializer,
-)
+
 from .models import User
+from .serializers import (
+    AdminUserSerializer,
+    OTPSendSerializer,
+    OTPVerifySerializer,
+    RegisterSerializer,
+    SocialTokenSerializer,
+    UserSerializer,
+)
 from .services import OTPService
 from .social import (
-    SocialAuthError, get_or_create_social_user,
-    verify_google_token, verify_facebook_token,
+    SocialAuthError,
+    get_or_create_social_user,
+    verify_facebook_token,
+    verify_google_token,
 )
 
 
