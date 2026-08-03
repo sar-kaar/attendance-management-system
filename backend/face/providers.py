@@ -26,13 +26,102 @@ logger = logging.getLogger(__name__)
 
 
 class FaceProcessingError(Exception):
-    """Raised when an image can't be processed due to a real error (missing
-    library, corrupt upload, provider/service failure) as opposed to simply
-    finding no face."""
+    """Raised when an image can't be processed due to a real server-side
+    error: missing library, provider outage, corrupt upload we can't even
+    decode. Views surface these as 500s."""
+
+
+class FaceValidationError(FaceProcessingError):
+    """Raised when the photo itself fails our quality bar - no face, more
+    than one face, or a face too small to encode reliably. Distinct from
+    FaceProcessingError so views can surface these as 400s (the photo is
+    fixable by the caller) rather than 500s (something on the server broke)."""
 
 
 def provider_name():
     return getattr(settings, 'FACE_PROVIDER', 'local')
+
+
+# --- local (dlib) provider tuning ------------------------------------------
+#
+# Multiple photos per student, each a bit noisier at capture time but the
+# stored set as a whole is more robust to day-to-day variation (lighting,
+# angle, glasses) than a single reference shot.
+MAX_ENCODINGS_PER_STUDENT = 5
+
+# 'large' runs the 68-point landmark model instead of the 5-point 'small'
+# one, which aligns the crop fed into the encoder more precisely - the
+# single biggest lever on encoding quality that doesn't cost extra photos.
+LANDMARK_MODEL = 'large'
+
+# num_jitters re-samples the aligned crop and averages the resulting
+# encodings, trading compute for a less noisy vector. Enrollment happens
+# once per photo so it can afford to be slow; recognition happens live
+# during attendance-taking so it can't.
+ENROLL_NUM_JITTERS = 10
+RECOGNIZE_NUM_JITTERS = 1
+
+# A face that's too small in frame (someone far from the camera, or a
+# group/ID photo) encodes unreliably. Reject it at the door instead of
+# silently storing or matching against a weak vector.
+MIN_FACE_WIDTH_RATIO = 0.15
+
+
+def _face_locations_and_encodings(image, num_jitters):
+    import face_recognition
+    locations = face_recognition.face_locations(image)
+    if not locations:
+        return [], []
+    encodings = face_recognition.face_encodings(
+        image, known_face_locations=locations,
+        num_jitters=num_jitters, model=LANDMARK_MODEL,
+    )
+    return locations, encodings
+
+
+def extract_quality_checked_encoding(image, num_jitters, photo_label=''):
+    """Return the single face encoding in *image*, or raise FaceValidationError
+    describing why it can't be used (no face / more than one face / face too
+    small). *photo_label* prefixes the message so a caller enrolling several
+    photos at once can say which one was the problem."""
+    locations, encodings = _face_locations_and_encodings(image, num_jitters)
+    if not locations:
+        raise FaceValidationError(
+            f'{photo_label}No face detected in the image. Please upload a '
+            'clear photo with a visible face.'
+        )
+    if len(locations) > 1:
+        raise FaceValidationError(
+            f'{photo_label}{len(locations)} faces were detected in the image. '
+            'Please upload a photo with only one person in it.'
+        )
+
+    top, right, bottom, left = locations[0]
+    image_width = image.shape[1]
+    if image_width and (right - left) / image_width < MIN_FACE_WIDTH_RATIO:
+        raise FaceValidationError(
+            f'{photo_label}The face is too small in the frame. Please move '
+            'closer to the camera or upload a tighter, well-lit photo.'
+        )
+    return encodings[0]
+
+
+def load_local_encodings(encoding_str):
+    """Return encodings stored in Student.face_encoding as a list of plain
+    lists of floats, regardless of which format wrote them: the legacy
+    single-vector format (a bare list of 128 floats) or the current
+    multi-photo format ({"encodings": [[...], ...]})."""
+    if not encoding_str:
+        return []
+    try:
+        stored = json.loads(encoding_str)
+    except (ValueError, TypeError):
+        return []
+    if isinstance(stored, dict):
+        return stored.get('encodings', [])
+    if isinstance(stored, list):
+        return [stored]
+    return []
 
 
 class AzureFaceClient:

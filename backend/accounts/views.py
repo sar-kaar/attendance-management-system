@@ -15,7 +15,7 @@ from .serializers import (
 from .services import OTPService
 from .social import (
     SocialAuthError,
-    get_or_create_social_user,
+    get_social_user,
     verify_facebook_token,
     verify_google_token,
 )
@@ -127,7 +127,7 @@ class _SocialLoginView(generics.GenericAPIView):
 
         try:
             profile = self.verify(serializer.validated_data['token'])
-            user, created = get_or_create_social_user(
+            user = get_social_user(
                 profile['email'], profile['first_name'], profile['last_name'],
             )
         except SocialAuthError as e:
@@ -141,7 +141,6 @@ class _SocialLoginView(generics.GenericAPIView):
             'access': str(refresh.access_token),
             'refresh': str(refresh),
             'user': UserSerializer(user).data,
-            'created': created,
         })
 
 

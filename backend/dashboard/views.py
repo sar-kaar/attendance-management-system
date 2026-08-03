@@ -1,11 +1,12 @@
 from django.db import transaction
-from django.db.models import Count, F, Q
+from django.db.models import Q
 from rest_framework import permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from accounts.models import User
 from attendance.models import Attendance
+from attendance.stats import attendance_counts, daily_attendance_percentages
 from courses.models import Course, Enrollment
 from students.models import Student
 
@@ -89,24 +90,18 @@ def student_attendance_breakdown(request, student_id):
     courses_data = []
     for enrollment in enrollments:
         attendances = Attendance.objects.filter(student=student, course=enrollment.course)
-        total = attendances.count()
-        present = attendances.filter(status='present').count()
-        absent = attendances.filter(status='absent').count()
-        late = attendances.filter(status='late').count()
-        lp = attendances.filter(status='lp').count()
-        eca = attendances.filter(status='eca').count()
-        percentage = round((present / total * 100), 1) if total > 0 else 0
+        counts = attendance_counts(attendances)
         courses_data.append({
             'course_id': enrollment.course.id,
             'course_code': enrollment.course.code,
             'course_name': enrollment.course.name,
-            'total_classes': total,
-            'present': present,
-            'absent': absent,
-            'late': late,
-            'late_present': lp,
-            'eca': eca,
-            'attendance_percentage': percentage,
+            'total_classes': counts['effective_total'],
+            'present': counts['present'],
+            'absent': counts['absent'],
+            'late': counts['late'],
+            'late_present': counts['lp'],
+            'eca': counts['eca'],
+            'attendance_percentage': counts['percentage'],
         })
 
     return Response(StudentAttendanceBreakdownSerializer({
@@ -129,14 +124,14 @@ def attendance_stats(request):
         attendances = Attendance.objects.filter(course=course)
         classes_run = attendances.values('date').distinct().count()
         marked_count = attendances.count()
-        present_count = attendances.filter(status='present').count()
-        absent_count = attendances.filter(status='absent').count()
-        late_count = attendances.filter(status='late').count()
-        lp_count = attendances.filter(status='lp').count()
-        eca_count = attendances.filter(status='eca').count()
+        counts = attendance_counts(attendances)
+        present_count = counts['present']
+        absent_count = counts['absent']
+        late_count = counts['late']
+        lp_count = counts['lp']
+        eca_count = counts['eca']
         avg_headcount = round(marked_count / classes_run, 1) if classes_run > 0 else 0
-        total_attended = present_count + late_count + lp_count
-        overall_pct = round((total_attended / marked_count * 100), 1) if marked_count > 0 else 0
+        overall_pct = counts['percentage']
 
         if overall_pct >= 80:
             course_status = 'good'
@@ -149,18 +144,10 @@ def attendance_stats(request):
 
         worst_day = None
         if classes_run > 0:
-                day_stats = (
-                    attendances.values('date')
-                    .annotate(
-                        present=Count('id', filter=Q(status='present')),
-                        total=Count('id'),
-                    )
-                    .annotate(pct=F('present') * 100.0 / F('total'))
-                    .order_by('pct')
-                )
-                if day_stats.exists():
-                    worst = day_stats.first()
-                    worst_day = f"{worst['date']} ({round(worst['pct'], 1)}%)"
+            daily = daily_attendance_percentages(attendances)
+            if daily:
+                worst = min(daily, key=lambda d: d['percentage'])
+                worst_day = f"{worst['date']} ({worst['percentage']}%)"
 
         faculty_name = None
         if course.faculty:
@@ -200,11 +187,10 @@ def at_risk_students(request):
         enrollments = Enrollment.objects.filter(course=course, is_active=True).select_related('student')
         for enrollment in enrollments:
             attendances = Attendance.objects.filter(student=enrollment.student, course=course)
-            total = attendances.count()
-            if total == 0:
+            counts = attendance_counts(attendances)
+            if counts['effective_total'] == 0:
                 continue
-            present = attendances.filter(status='present').count() + attendances.filter(status='late').count()
-            pct = round((present / total * 100), 1)
+            pct = counts['percentage']
             if pct < threshold:
                 at_risk.append({
                     'student_id': enrollment.student.id,
@@ -213,8 +199,8 @@ def at_risk_students(request):
                     'course_id': course.id,
                     'course_code': course.code,
                     'course_name': course.name,
-                    'total_classes': total,
-                    'present_count': present,
+                    'total_classes': counts['effective_total'],
+                    'present_count': counts['attended'],
                     'attendance_percentage': pct,
                 })
     at_risk.sort(key=lambda x: x['attendance_percentage'])
@@ -237,18 +223,15 @@ def faculty_performance(request):
         students_managed = Enrollment.objects.filter(
             course__in=courses, is_active=True
         ).values('student').distinct().count()
-        total = all_attendances.count()
-        present = all_attendances.filter(status='present').count() + all_attendances.filter(status='late').count()
-        overall_pct = round((present / total * 100), 1) if total > 0 else 0
+        overall_pct = attendance_counts(all_attendances)['percentage']
 
         worst_subject = None
         worst_pct = 101
         courses_data = []
         for course in courses:
             course_att = Attendance.objects.filter(course=course)
-            c_total = course_att.count()
-            c_present = course_att.filter(status='present').count() + course_att.filter(status='late').count()
-            c_pct = round((c_present / c_total * 100), 1) if c_total > 0 else 0
+            c_counts = attendance_counts(course_att)
+            c_pct = c_counts['percentage']
             if c_pct < worst_pct:
                 worst_pct = c_pct
                 worst_subject = course.name
@@ -256,7 +239,7 @@ def faculty_performance(request):
                 'course_id': course.id,
                 'course_code': course.code,
                 'course_name': course.name,
-                'total_classes': c_total,
+                'total_classes': c_counts['effective_total'],
                 'attendance_percentage': c_pct,
             })
 

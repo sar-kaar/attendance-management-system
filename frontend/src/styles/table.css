@@ -228,3 +228,52 @@ tr:hover {
   border-color: #4a90d9;
   box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.1);
 }
+
+.enrollment-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.enrollment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  background: #f0f4f8;
+  color: #333;
+}
+
+.enrollment-chip.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.enrollment-chip-date {
+  font-size: 11px;
+  color: #888;
+}
+
+.enrollment-chip.inactive .enrollment-chip-date {
+  color: #b91c1c;
+}
+
+.enrollment-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.enrollment-chip-remove:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}

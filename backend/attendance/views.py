@@ -16,6 +16,7 @@ from students.models import Student
 
 from .models import Attendance, AttendanceCode
 from .serializers import AttendanceCodeSerializer, AttendanceSerializer, BulkAttendanceSerializer
+from .stats import attendance_counts
 
 
 class IsAdminOrFaculty(permissions.BasePermission):
@@ -125,15 +126,12 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             qs = qs.filter(date__gte=start_date)
         if end_date:
             qs = qs.filter(date__lte=end_date)
-        total = qs.count()
-        present = qs.filter(status='present').count() + qs.filter(status='late').count()
-        absent = qs.filter(status='absent').count()
-        percentage = round((present / total * 100), 1) if total > 0 else 0
+        counts = attendance_counts(qs)
         return Response({
-            'total_records': total,
-            'present': present,
-            'absent': absent,
-            'attendance_percentage': percentage,
+            'total_records': counts['effective_total'],
+            'present': counts['attended'],
+            'absent': counts['absent'],
+            'attendance_percentage': counts['percentage'],
         })
 
     @action(detail=False, methods=['get'])
@@ -150,16 +148,8 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         else:
             total_students = Student.objects.filter(is_active=True).count()
         total_courses = courses_qs.count()
-        today_attendance = attendance_qs.filter(date=today)
-        today_present = today_attendance.filter(status='present').count() + today_attendance.filter(status='late').count()
-        today_absent = today_attendance.filter(status='absent').count()
-        today_total = today_attendance.count()
-        today_pct = round((today_present / today_total * 100), 1) if today_total > 0 else 0
-
-        total_records = attendance_qs.count()
-        overall_present = attendance_qs.filter(status='present').count() + attendance_qs.filter(status='late').count()
-        overall_absent = attendance_qs.filter(status='absent').count()
-        overall_pct = round((overall_present / total_records * 100), 1) if total_records > 0 else 0
+        today_counts = attendance_counts(attendance_qs.filter(date=today))
+        overall_counts = attendance_counts(attendance_qs)
 
         recent = attendance_qs.select_related('student', 'course').order_by('-date', '-created_at')[:10]
 
@@ -167,16 +157,16 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             'total_students': total_students,
             'total_courses': total_courses,
             'today': {
-                'total': today_total,
-                'present': today_present,
-                'absent': today_absent,
-                'percentage': today_pct,
+                'total': today_counts['effective_total'],
+                'present': today_counts['attended'],
+                'absent': today_counts['absent'],
+                'percentage': today_counts['percentage'],
             },
             'overall': {
-                'total': total_records,
-                'present': overall_present,
-                'absent': overall_absent,
-                'percentage': overall_pct,
+                'total': overall_counts['effective_total'],
+                'present': overall_counts['attended'],
+                'absent': overall_counts['absent'],
+                'percentage': overall_counts['percentage'],
             },
             'recent_attendance': [
                 {
@@ -255,11 +245,12 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             elements.append(Paragraph(f"From: {start_date}  To: {end_date or 'Present'}", styles['Normal']))
         elements.append(Spacer(1, 20))
 
-        total = qs.count()
-        present = qs.filter(status='present').count() + qs.filter(status='late').count()
-        absent = qs.filter(status='absent').count()
-        pct = round((present / total * 100), 1) if total > 0 else 0
-        elements.append(Paragraph(f"Total Records: {total} | Present: {present} | Absent: {absent} | Attendance: {pct}%", styles['Normal']))
+        counts = attendance_counts(qs)
+        elements.append(Paragraph(
+            f"Total Records: {counts['effective_total']} | Present: {counts['attended']} | "
+            f"Absent: {counts['absent']} | Attendance: {counts['percentage']}%",
+            styles['Normal'],
+        ))
         elements.append(Spacer(1, 20))
 
         data = [['Student ID', 'Name', 'Course', 'Date', 'Status']]

@@ -1,8 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { studentAPI } from "../services/api";
 import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 import { useNotify, formatApiError } from "../context/NotificationContext";
 import "../styles/table.css";
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const MAX_STUDENT_AGE_YEARS = 100;
+const minDobISO = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - MAX_STUDENT_AGE_YEARS);
+  return d.toISOString().slice(0, 10);
+};
 
 export default function Students() {
   const { notify, confirm } = useNotify();
@@ -23,19 +31,19 @@ export default function Students() {
     address: "",
   });
 
-  const loadStudents = () => {
+  const loadStudents = useCallback(() => {
     setLoading(true);
     studentAPI
       .list({ search: search || undefined })
       .then((res) => setStudents(res.data.results || res.data))
       .catch(console.error)
       .finally(() => setLoading(false));
-  };
+  }, [search]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount/search-change, standard data-loading pattern
     loadStudents();
-  }, [search]);
+  }, [loadStudents]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -217,14 +225,21 @@ export default function Students() {
                   <input
                     value={form.student_id}
                     onChange={(e) => setForm({ ...form, student_id: e.target.value })}
+                    placeholder="MIT-2024-001"
+                    pattern="^MIT-\d{4}-\d{3}$"
+                    title="Student ID must look like MIT-2024-001 (MIT-YYYY-NNN)"
                     required
                   />
                 </div>
                 <div className="form-group">
                   <label>Phone</label>
                   <input
+                    type="tel"
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    pattern="^\d{10}$"
+                    maxLength={10}
+                    title="Enter a valid 10-digit phone number"
                   />
                 </div>
                 <div className="form-group">
@@ -246,6 +261,8 @@ export default function Students() {
                   <input
                     type="date"
                     value={form.date_of_birth}
+                    min={minDobISO()}
+                    max={todayISO()}
                     onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })}
                   />
                 </div>

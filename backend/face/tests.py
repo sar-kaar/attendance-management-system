@@ -54,22 +54,48 @@ class FaceRegisterTests(TestCase):
 
     @patch('face.views._persist_face')
     def test_register_face_success(self, mock_persist):
-        mock_persist.return_value = np.random.rand(128).tolist()
+        mock_persist.return_value = {'encodings': [_fake_encoding()]}
         resp = self.client.post('/api/face/register/', {
             'student_id': 'F001',
             'image': _mock_face_image(),
         }, format='multipart')
         self.assertEqual(resp.status_code, 200)
         self.assertIn('message', resp.data)
+        self.assertEqual(resp.data['photo_count'], 1)
         self.student.refresh_from_db()
         self.assertIsNotNone(self.student.face_encoding)
+
+    @patch('face.views._persist_face')
+    def test_register_face_adds_additional_photo(self, mock_persist):
+        self.student.face_encoding = json.dumps({'encodings': [_fake_encoding()]})
+        self.student.save(update_fields=['face_encoding'])
+        mock_persist.return_value = {'encodings': [_fake_encoding(), _fake_encoding()]}
+        resp = self.client.post('/api/face/register/', {
+            'student_id': 'F001',
+            'image': _mock_face_image(),
+        }, format='multipart')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data['photo_count'], 2)
+
+    def test_register_face_rejects_beyond_max_photos(self):
+        from face.providers import MAX_ENCODINGS_PER_STUDENT
+        self.student.face_encoding = json.dumps(
+            {'encodings': [_fake_encoding() for _ in range(MAX_ENCODINGS_PER_STUDENT)]}
+        )
+        self.student.save(update_fields=['face_encoding'])
+        resp = self.client.post('/api/face/register/', {
+            'student_id': 'F001',
+            'image': _mock_face_image(),
+        }, format='multipart')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('maximum', str(resp.data))
 
     def test_register_face_missing_fields(self):
         resp = self.client.post('/api/face/register/', {}, format='multipart')
         self.assertEqual(resp.status_code, 400)
 
     def test_register_face_student_not_found(self):
-        with patch('face.views._persist_face', return_value=np.random.rand(128).tolist()):
+        with patch('face.views._persist_face', return_value={'encodings': [_fake_encoding()]}):
             resp = self.client.post('/api/face/register/', {
                 'student_id': 'NONEXISTENT',
                 'image': _mock_face_image(),
@@ -78,7 +104,10 @@ class FaceRegisterTests(TestCase):
 
     @patch('face.views._persist_face')
     def test_register_face_no_face_detected(self, mock_persist):
-        mock_persist.return_value = None
+        from face.providers import FaceValidationError
+        mock_persist.side_effect = FaceValidationError(
+            'No face detected in the image. Please upload a clear photo with a visible face.'
+        )
         resp = self.client.post('/api/face/register/', {
             'student_id': 'F001',
             'image': _mock_face_image(),

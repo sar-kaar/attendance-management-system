@@ -227,27 +227,23 @@ class SocialLoginTest(TestCase):
                       'first_name': 'New', 'last_name': 'User'}
 
     @patch('accounts.views.verify_google_token')
-    def test_google_login_creates_user_and_returns_jwt(self, mock_verify):
+    def test_google_login_rejects_unknown_email(self, mock_verify):
         mock_verify.return_value = self.GOOGLE_PROFILE
         resp = self.client.post(self.google_url, {'token': 'valid-google-token'})
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertIn('access', resp.data)
-        self.assertIn('refresh', resp.data)
-        self.assertTrue(resp.data['created'])
-        user = User.objects.get(email='newuser@mitnepal.edu.np')
-        self.assertEqual(user.role, 'student')
-        # Provider-only accounts must not be reachable by password.
-        self.assertFalse(user.has_usable_password())
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('error', resp.data)
+        self.assertEqual(User.objects.count(), 0)
 
     @patch('accounts.views.verify_google_token')
-    def test_google_login_reuses_existing_account_by_email(self, mock_verify):
+    def test_google_login_signs_in_existing_account_by_email(self, mock_verify):
         existing = User.objects.create_user(
             username='existing', email='newuser@mitnepal.edu.np',
             password='test1234', role='faculty')
         mock_verify.return_value = self.GOOGLE_PROFILE
         resp = self.client.post(self.google_url, {'token': 'valid-google-token'})
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertFalse(resp.data['created'])
+        self.assertIn('access', resp.data)
+        self.assertIn('refresh', resp.data)
         self.assertEqual(User.objects.filter(email='newuser@mitnepal.edu.np').count(), 1)
         # An existing role must survive a social sign-in.
         existing.refresh_from_db()
@@ -266,12 +262,21 @@ class SocialLoginTest(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
     @patch('accounts.views.verify_facebook_token')
-    def test_facebook_login_creates_user(self, mock_verify):
+    def test_facebook_login_rejects_unknown_email(self, mock_verify):
+        mock_verify.return_value = {'email': 'fbuser@example.com',
+                                    'first_name': 'Fb', 'last_name': 'User'}
+        resp = self.client.post(self.facebook_url, {'token': 'valid-fb-token'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(User.objects.filter(email='fbuser@example.com').exists())
+
+    @patch('accounts.views.verify_facebook_token')
+    def test_facebook_login_signs_in_existing_account(self, mock_verify):
+        User.objects.create_user(username='fbuser', email='fbuser@example.com',
+                                 password='test1234')
         mock_verify.return_value = {'email': 'fbuser@example.com',
                                     'first_name': 'Fb', 'last_name': 'User'}
         resp = self.client.post(self.facebook_url, {'token': 'valid-fb-token'})
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertTrue(User.objects.filter(email='fbuser@example.com').exists())
 
     @patch('accounts.views.verify_facebook_token')
     def test_disabled_account_cannot_sign_in_socially(self, mock_verify):
@@ -281,17 +286,6 @@ class SocialLoginTest(TestCase):
                                     'first_name': '', 'last_name': ''}
         resp = self.client.post(self.facebook_url, {'token': 'valid-fb-token'})
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
-
-    @patch('accounts.views.verify_google_token')
-    def test_username_collision_gets_unique_suffix(self, mock_verify):
-        User.objects.create_user(username='clash', email='other@example.com',
-                                 password='test1234')
-        mock_verify.return_value = {'email': 'clash@example.com',
-                                    'first_name': '', 'last_name': ''}
-        resp = self.client.post(self.google_url, {'token': 'valid-google-token'})
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertTrue(User.objects.filter(email='clash@example.com')
-                        .exclude(username='clash').exists())
 
 
 class SocialTokenVerificationTest(TestCase):

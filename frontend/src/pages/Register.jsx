@@ -111,11 +111,14 @@ function Register() {
           <div className="input-box">
             <FaPhone className="icon" />
             <input
-              type="text"
+              type="tel"
               name="phone"
               placeholder="Phone (optional)"
               value={form.phone}
               onChange={handleChange}
+              pattern="^\d{10}$"
+              maxLength={10}
+              title="Enter a valid 10-digit phone number"
             />
           </div>
           <div className="input-box">

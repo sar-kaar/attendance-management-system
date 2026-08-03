@@ -4,6 +4,19 @@ import { FaPlus, FaTrash } from "react-icons/fa";
 import { useNotify, formatApiError } from "../context/NotificationContext";
 import "../styles/table.css";
 
+// One row per student instead of one row per (student, course) pair, so a
+// student enrolled in several courses doesn't repeat their name down the table.
+function groupByStudent(enrollments) {
+  const groups = new Map();
+  for (const e of enrollments) {
+    if (!groups.has(e.student)) {
+      groups.set(e.student, { student: e.student, student_name: e.student_name, items: [] });
+    }
+    groups.get(e.student).items.push(e);
+  }
+  return Array.from(groups.values());
+}
+
 export default function Enrollments() {
   const { notify, confirm } = useNotify();
   const [enrollments, setEnrollments] = useState([]);
@@ -102,33 +115,35 @@ export default function Enrollments() {
             <thead>
               <tr>
                 <th>Student</th>
-                <th>Course</th>
-                <th>Enrolled Date</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>Courses</th>
               </tr>
             </thead>
             <tbody>
-              {enrollments.map((e) => (
-                <tr key={e.id}>
-                  <td>{e.student_name}</td>
-                  <td>{e.course_name}</td>
-                  <td>{e.enrolled_date}</td>
+              {groupByStudent(enrollments).map((group) => (
+                <tr key={group.student}>
+                  <td style={{ whiteSpace: "nowrap" }}>{group.student_name}</td>
                   <td>
-                    <span className={`badge ${e.is_active ? "active" : "inactive"}`}>
-                      {e.is_active ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="actions">
-                    <button onClick={() => handleUnenroll(e)} className="btn-icon danger">
-                      <FaTrash />
-                    </button>
+                    <div className="enrollment-chips">
+                      {group.items.map((e) => (
+                        <span key={e.id} className={`enrollment-chip ${e.is_active ? "active" : "inactive"}`}>
+                          {e.course_name}
+                          <span className="enrollment-chip-date">{e.enrolled_date}</span>
+                          <button
+                            onClick={() => handleUnenroll(e)}
+                            className="enrollment-chip-remove"
+                            title={`Unenroll from ${e.course_name}`}
+                          >
+                            <FaTrash />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
                   </td>
                 </tr>
               ))}
               {enrollments.length === 0 && (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: "center", padding: 32 }}>
+                  <td colSpan={2} style={{ textAlign: "center", padding: 32 }}>
                     No enrollments found
                   </td>
                 </tr>

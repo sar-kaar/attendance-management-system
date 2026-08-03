@@ -306,3 +306,67 @@ class AttendanceReportTest(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['total_records'], 3)
+
+
+class AttendanceCountsTest(TestCase):
+    """Verifies the shared attendance-percentage policy: 'present', 'late',
+    and 'lp' all count as attended; 'eca' is excluded from the denominator
+    entirely; only 'absent' counts against the student.
+    """
+
+    def setUp(self):
+        self.student = Student.objects.create(
+            first_name='John', last_name='Doe',
+            email='john@test.com', student_id='STU001'
+        )
+        self.course = Course.objects.create(name='Software Engineering', code='CSE405')
+
+    def _mark(self, statuses):
+        for i, s in enumerate(statuses):
+            Attendance.objects.create(
+                student=self.student, course=self.course,
+                date=date.today() - timedelta(days=i), status=s,
+            )
+
+    def test_late_present_counts_as_attended(self):
+        from .stats import attendance_counts
+        self._mark(['present', 'lp', 'lp', 'absent'])
+        counts = attendance_counts(Attendance.objects.filter(course=self.course))
+        # 3 attended (present + 2x lp) out of 4 effective records.
+        self.assertEqual(counts['attended'], 3)
+        self.assertEqual(counts['effective_total'], 4)
+        self.assertEqual(counts['percentage'], 75.0)
+
+    def test_eca_excluded_from_denominator(self):
+        from .stats import attendance_counts
+        self._mark(['present', 'eca', 'eca', 'absent'])
+        counts = attendance_counts(Attendance.objects.filter(course=self.course))
+        # eca days are dropped entirely: 1 attended out of 2 effective records,
+        # not 1 out of 4.
+        self.assertEqual(counts['attended'], 1)
+        self.assertEqual(counts['effective_total'], 2)
+        self.assertEqual(counts['percentage'], 50.0)
+
+    def test_zero_effective_records_gives_zero_percent(self):
+        from .stats import attendance_counts
+        self._mark(['eca', 'eca'])
+        counts = attendance_counts(Attendance.objects.filter(course=self.course))
+        self.assertEqual(counts['effective_total'], 0)
+        self.assertEqual(counts['percentage'], 0)
+
+    def test_report_and_dashboard_endpoints_agree_with_lp_and_eca(self):
+        """Same underlying data must produce the same percentage everywhere."""
+        admin = User.objects.create_user(username='admin2', password='x', role='admin')
+        self.client = APIClient()
+        self.client.force_authenticate(user=admin)
+        self._mark(['present', 'lp', 'eca', 'absent'])
+
+        report = self.client.get(f'/api/attendance/report/?course={self.course.id}')
+        dashboard = self.client.get('/api/attendance/dashboard/')
+
+        # present + lp = 2 attended, eca excluded, absent counts against ->
+        # effective_total = 3, percentage = 2/3 = 66.7.
+        self.assertEqual(report.data['attendance_percentage'], 66.7)
+        self.assertEqual(dashboard.data['overall']['percentage'], 66.7)
+        self.assertEqual(report.data['total_records'], dashboard.data['overall']['total'])
+        self.assertEqual(report.data['present'], dashboard.data['overall']['present'])
