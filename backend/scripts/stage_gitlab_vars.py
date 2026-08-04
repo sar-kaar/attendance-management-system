@@ -65,6 +65,17 @@ def collect():
     values['FACEBOOK_APP_ID'] = app_id.group(0) if app_id else missing.append('FACEBOOK_APP_ID')
     values['FACEBOOK_APP_SECRET'] = app_secret.group(0) if app_secret else missing.append('FACEBOOK_APP_SECRET')
 
+    # Same public IDs, duplicated under the VITE_ prefix so Vite bakes them
+    # into the frontend build - without these, SocialLogin.jsx renders nothing.
+    if values.get('GOOGLE_CLIENT_ID'):
+        values['VITE_GOOGLE_CLIENT_ID'] = values['GOOGLE_CLIENT_ID']
+    else:
+        missing.append('VITE_GOOGLE_CLIENT_ID')
+    if values.get('FACEBOOK_APP_ID'):
+        values['VITE_FACEBOOK_APP_ID'] = values['FACEBOOK_APP_ID']
+    else:
+        missing.append('VITE_FACEBOOK_APP_ID')
+
     return {k: v for k, v in values.items() if v}, [m for m in missing if m]
 
 
@@ -76,6 +87,7 @@ def main():
         'EMAIL_HOST_PASSWORD', 'DEFAULT_FROM_EMAIL', 'OTP_EXPIRY_MINUTES',
         'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET',
         'FACEBOOK_APP_ID', 'FACEBOOK_APP_SECRET',
+        'VITE_GOOGLE_CLIENT_ID', 'VITE_FACEBOOK_APP_ID',
     ]
 
     lines = [
