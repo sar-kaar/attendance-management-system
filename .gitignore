@@ -28,6 +28,7 @@ build/
 # AI tool configs
 .codebones/
 .opencode/
+.claude/opencode-bridge-logs/
 
 # Local scratch runners - these hardcode one machine's absolute paths
 *.bat
