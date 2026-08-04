@@ -2,7 +2,7 @@
 
 > **Purpose:** Persistent, living project status for both humans and AI coding agents. **Update this file after every major implementation.**
 > **Scope:** Current state only — historical narrative belongs in `HANDOFF.md` (session logs) or [decisions.md](decisions.md) (why a decision was made), not here.
-> **Last updated:** 2026-07-26 · **Version:** 1.3 (see [decisions.md](decisions.md) ADR-007 for why this file exists and supersedes older status docs)
+> **Last updated:** 2026-08-04 · **Version:** 1.4 (see [decisions.md](decisions.md) ADR-007 for why this file exists and supersedes older status docs)
 
 ## Table of Contents
 
@@ -17,6 +17,7 @@
 - [Current Priorities](#current-priorities)
 - [Next Recommended Tasks](#next-recommended-tasks)
 - [Important Implementation Notes](#important-implementation-notes)
+- [External Trackers](#external-trackers)
 
 ## Project Status
 
@@ -44,11 +45,11 @@ Backend and frontend are **both substantially built and deployed** (Azure App Se
 | Dashboard UI (frontend widgets for the backend-complete dashboard endpoints) | Ekata | GitHub #1 (US-10) |
 | ECA (extra-curricular activity) tracking | Ekata | GitHub #23 (US-12) |
 | Notifications (email/SMS) | Unassigned | Phase 7, not started, see [phases.md](phases.md) |
-| SRS Document (IEEE 830) | Prizma | GitHub #5 (T-003) |
-| Requirements Gathering doc | Prizma | GitHub #7 (T-002) |
+| SRS Document (IEEE 830) | Prizma | GitHub #5 (T-003) — **drafted** 2026-08-04, see [srs.md](srs.md); needs Prizma/team review, not yet a sign-off |
+| Requirements Gathering doc | Prizma | GitHub #7 (T-002) — **drafted** 2026-08-04, see [requirements-gathering.md](requirements-gathering.md); needs Prizma/team review |
 | Wireframes and Mockups (formal) | Prizma | GitHub #11 (T-005) — note: `wireframes/*.html` already exist as static mockups; unclear if this issue means something further |
-| Project Charter | Prizma | GitHub #8 (T-007) |
-| Team Norms and Comms Plan | Prizma | GitHub #12 (T-008) |
+| Project Charter | Prizma | GitHub #8 (T-007) — **already exists** as a Google Doc (`Project Charter (AMS).gdoc` shortcut at repo root, PACT/SWOT/PESTLE analysis complete), but its Technologies section is stale (lists Node.js/Express/MySQL; actual stack is Django/DRF/PostgreSQL per [tech-stack.md](tech-stack.md)) — needs a content update, not a rewrite |
+| Team Norms and Comms Plan | Prizma | GitHub #12 (T-008) — **already substantially covered** by `Weekly Tasks/TEAM_SYNC_PROTOCOL.md` (daily standup format, escalation process, EOD logging) and `Weekly Tasks/GIT_WORKFLOW.md` (branch/PR/commit conventions) — likely just needs the issue closed/linked rather than new content |
 
 ## Known Bugs / Open Issues
 
@@ -60,13 +61,8 @@ Backend and frontend are **both substantially built and deployed** (Azure App Se
 
 ## Technical Debt
 
-<<<<<<< HEAD
 - ~~No Python linter configured for `backend/`~~ — resolved 2026-07-26: `ruff` added and CI-enforced in both `.gitlab-ci.yml` and `.github/workflows/ci.yml` (see Completed Features and Files Modified/Created).
-- ~~Bug found by the ruff pass~~ — re-investigated 2026-07-26 and reclassified: not a bug. `report()`'s `qs = self.get_queryset()` call already applies `course`/`student` filtering (via `get_queryset()`'s own query-param handling), so the two local vars were dead code, not a missing filter. Resolved — see Completed Features.
-=======
-- ~~No Python linter configured for `backend/`~~ — resolved 2026-07-26: `ruff` added (`backend/pyproject.toml`, `backend/requirements-dev.txt`), see Files Modified/Created. Not yet CI-enforced (matches frontend ESLint's current state — see [release-process.md](release-process.md) Code Quality Gates); wiring into CI is a separate follow-up task.
-- **Bug found by the ruff pass, not fixed yet**: `AttendanceViewSet.report` (`backend/attendance/views.py:118-122`) reads `course`/`student` query params into `course_id`/`student_id` but never applies them as filters to the queryset — only `start_date`/`end_date` actually filter. Callers attempting to filter the report by course or student silently get unfiltered totals instead. Left untouched deliberately: fixing it changes API response behavior, which is outside a lint-cleanup's scope — needs its own reviewed bug-fix task (see [development-guide.md](development-guide.md) Bug Fix workflow: add a regression test first, then fix).
->>>>>>> 33d4496 (chore: add ruff to backend, fix lint findings, wire into CI)
+- ~~Bug found by the ruff pass~~ — re-investigated 2026-07-26 and reclassified: not a bug. `report()`'s `qs = self.get_queryset()` call already applies `course`/`student` filtering (via `get_queryset()`'s own query-param handling), so the two local vars were dead code, not a missing filter. Resolved — see Completed Features. (This superseded an earlier draft of this note that called it an unfixed bug; that draft was committed by mistake alongside unresolved merge-conflict markers and cleaned up 2026-08-04. The risk register's R-07 still needs updating to reflect "Mitigated" instead of "Open".)
 - No frontend automated test suite (Vitest/RTL not set up) — see [testing.md](testing.md).
 - No coverage gate in CI (backend tests run, but no minimum-coverage enforcement).
 - `Student` (in `students` app) and `accounts.User` (role=`student`) are not FK-linked — a design gap noted in `docs/database-schema.md`, not yet resolved.
@@ -87,6 +83,14 @@ See [decisions.md](decisions.md) for full ADRs. Most recent: ADR-007 (this memor
 - `docs/security.md`, `docs/contributing.md` — closed the two gaps this file's own audit flagged.
 - `docs/tech-stack.md`, `docs/package-guidelines.md`, `docs/coding-standards.md`, `docs/api-standards.md`, `docs/database-standards.md`, `docs/testing-strategy.md`, `docs/security-standards.md`, `docs/cicd.md`, `docs/versioning.md`, `docs/release-process.md`, `docs/development-guide.md` — enterprise engineering-foundation pass (2026-07-26, second session): final tech stack with rationale, planned `packages/` boundaries (design only, not implemented), and standards for coding/API/DB/testing/security/CI-CD/versioning/release/workflow. Each cross-references rather than duplicates the operational docs above (e.g. `security-standards.md` is the rule set, `security.md` stays the status/gap report).
 - `.editorconfig`, `.prettierrc`, `.prettierignore`, `.gitattributes` (root)
+
+**Created (2026-08-04 session — overdue PM deliverables + risk/docs cleanup)**:
+
+- `docs/srs.md` — Software Requirements Specification, IEEE 830 format, derived from `prd.md`/`architecture.md`/`database-schema.md` and cross-checked against actual code.
+- `docs/requirements-gathering.md` — requirements elicitation methodology, stakeholder list, and traceability; documents an honest gap (no formal faculty/student interviews were conducted).
+- Fixed unresolved git merge-conflict markers (`<<<<<<<`/`=======`/`>>>>>>>`) that had been committed into this file since `bcd18cc` — resolved in favor of the accurate content (the `AttendanceViewSet.report` filter "bug" was re-verified as already fixed, not open).
+- Added the "External Trackers" section below, cross-referencing the three project-tracking Google Sheets found in Drive.
+- Added a "Credential Inventory & Deployment Continuity" section to `docs/deployment.md`, addressing risk P-01/P-02 (single point of failure on Azure/CI credentials).
 
 **Modified**:
 
@@ -121,16 +125,10 @@ Branch: `ams`. Prior session's `HANDOFF.md` (2026-07-20) noted `develop` was ahe
 
 ## Next Recommended Tasks
 
-<<<<<<< HEAD
-1. Merge `fix/attendance-report-filter` (ruff + CI wiring + report dead-code cleanup + regression tests) into `develop`/`main` via PR — currently pushed but not merged.
-2. Verify `FACE_PROVIDER=azure` end-to-end against a real Azure Face resource (see [decisions.md](decisions.md) ADR-002 consequences).
-=======
-1. Fix the `AttendanceViewSet.report` filter bug (see Technical Debt) — `course`/`student` query params are accepted but silently ignored.
-2. Wire `ruff check` into `.gitlab-ci.yml` and `.github/workflows/ci.yml` (config and dev-dependency already in place, not yet CI-enforced).
-3. Verify `FACE_PROVIDER=azure` end-to-end against a real Azure Face resource (see [decisions.md](decisions.md) ADR-002 consequences).
->>>>>>> 33d4496 (chore: add ruff to backend, fix lint findings, wire into CI)
-4. Stand up a minimal Vitest smoke test for the frontend so a test step can be added to CI.
-5. Retire or refresh `Guidelines/03_PROJECT_TRACKER.csv`.
+1. Verify `FACE_PROVIDER=azure` end-to-end against a real Azure Face resource (see [decisions.md](decisions.md) ADR-002 consequences).
+2. Stand up a minimal Vitest smoke test for the frontend so a test step can be added to CI.
+3. Retire or refresh `Guidelines/03_PROJECT_TRACKER.csv`.
+4. Update the "AMS - User Story Dependencies & Risks" tracker (Google Sheet, see External Trackers below) — R-07/W-08 report-filter bug should move from "Open" to "Mitigated".
 
 ## Important Implementation Notes
 
@@ -138,3 +136,11 @@ Branch: `ams`. Prior session's `HANDOFF.md` (2026-07-20) noted `develop` was ahe
 - Enrollment is enforced in `AttendanceSerializer.validate()` and `mark_bulk`, not via a hard DB foreign-key constraint from `attendance` to `enrollment` — any new attendance-creation path must replicate this check.
 - Both GitHub and GitLab remotes are intentionally kept in sync — see [decisions.md](decisions.md) ADR-005 before consolidating CI.
 - Use the toast/confirm system for all new UI feedback — never native `alert()`/`confirm()` (ADR-006).
+
+## External Trackers
+
+Project status also lives in team-managed Google Sheets (not in this repo, so they can drift — this file remains the code-verified source of truth per ADR-007):
+
+- **"Attendance Management System – Master Tracker"** — sprint board, feature backlog, bug tracker, release planning (owner: `abhishekrokaya.s24@mitnepal.edu.np`).
+- **"AMS - User Story Dependencies & Risks"** — user-story dependency chains, technical risk register (R-01–R-33), user-story status matrix, and team/process risk register (P-01–P-10, W-01–W-12). Most current and detailed risk source; cross-check before treating any risk there as still open (e.g. R-07/W-08 predates the fix documented above).
+- **"Attendance Management System - Project Tracker"** — an early (2026-07-07/08) sprint-planning template, stale and unmaintained since day 2 of the project; do not treat as current (same caveat as `Guidelines/03_PROJECT_TRACKER.csv`).

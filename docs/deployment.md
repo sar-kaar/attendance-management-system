@@ -2,7 +2,7 @@
 
 > **Purpose:** How AMS is built, tested, and deployed — dev, CI, and production.
 > **Scope:** `.gitlab-ci.yml`, `.github/workflows/ci.yml`, Azure config (`.deployment`, `backend/.deployment`, `backend/postbuild.sh`, `backend/startup.sh`).
-> **Last updated:** 2026-07-26 · **Version:** 1.0
+> **Last updated:** 2026-08-04 · **Version:** 1.1
 
 ## Table of Contents
 
@@ -15,6 +15,7 @@
 - [Deployment Checklist](#deployment-checklist)
 - [Rollback Plan](#rollback-plan)
 - [Monitoring & Logging](#monitoring--logging)
+- [Credential Inventory & Deployment Continuity](#credential-inventory--deployment-continuity)
 
 ## Environments
 
@@ -106,3 +107,36 @@ No automated rollback is configured. To roll back:
 ## Monitoring & Logging
 
 No dedicated APM/log-aggregation is configured. Azure App Service's built-in log stream (`az webapp log tail`) and Application Insights (if enabled on the resource) are the available tools today. This is a documented gap, not a hidden one — add structured logging/monitoring as a future task if the team decides it's worth the operational overhead (see [phases.md](phases.md) for where to slot it).
+
+## Credential Inventory & Deployment Continuity
+
+> **Why this section exists**: the project's risk register (see [memory.md](memory.md#external-trackers), risks P-01/P-02) flags that one person (Abhishek) currently holds every production credential and is the only one who has deployed or can deploy. This section is the mitigation: an inventory of *where* each credential lives and *what to do* if the primary maintainer is unavailable — without putting any actual secret value in this repo.
+
+### Where credentials live (locations only — no values here or anywhere in git)
+
+| Credential | Where it's stored | Used for |
+|---|---|---|
+| `AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID` | GitLab CI/CD → Settings → CI/CD → Variables (masked/protected) | Service principal used by `az login` in the deploy stage |
+| `AZURE_RESOURCE_GROUP` / `AZURE_WEBAPP_NAME` / `AZURE_STORAGE_ACCOUNT` | Same GitLab CI/CD Variables block | Identifies which Azure resources to deploy to (not secret, but kept alongside the credentials for convenience) |
+| `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` / `EMAIL_HOST` / `EMAIL_PORT` / `DEFAULT_FROM_EMAIL` | GitLab CI/CD Variables (synced into Azure App Service settings at deploy time — see CI/CD Pipeline above) | Brevo SMTP for OTP email |
+| `SECRET_KEY`, `DATABASE_URL`, `GOOGLE_CLIENT_ID`/`SECRET`, `FACEBOOK_APP_ID`/`SECRET`, `AZURE_FACE_*` | Azure App Service `ams-backend` → Configuration → Application settings (set directly, not all synced from CI) | Django runtime config, social login, face provider |
+| Azure account access itself | Azure Portal, subscription under `ams-rg` resource group | Owns everything above; access to this is the actual root credential |
+| GitHub repo admin / Actions secrets | GitHub repo Settings → Secrets and variables (if any are configured beyond the public CI steps) | GitHub Actions test mirror (see Why Two CI Configs above) |
+| GitLab repo/CI admin | GitLab project Settings | Owns the CI/CD Variables above and the pipeline that actually deploys |
+
+### Backup-access runbook
+
+If the primary maintainer is unavailable and a deploy, rollback, or credential rotation is needed:
+
+1. **Azure Portal access**: the Azure subscription owner (check IAM role assignments on `ams-rg`) can grant a second person "Contributor" on the resource group without needing any existing credential from the primary maintainer — this is the actual disaster-recovery path, since Azure AD/Portal access is independent of anything stored in GitLab/GitHub.
+2. **GitLab CI/CD Variables**: anyone with Maintainer+ role on the GitLab project can view (if unmasked) or rotate these under Settings → CI/CD → Variables. Project Owner should ensure at least one other team member has Maintainer access, not just Developer.
+3. **GitHub repo**: ensure at least one other team member has Admin (not just Write) access, so branch protections, Actions secrets, and repo settings aren't single-owner.
+4. **Rotation after any suspected exposure**: rotate the exposed credential at its source (Azure Portal for Azure/App Service secrets, Brevo dashboard for SMTP, Google/Facebook developer consoles for OAuth secrets), then update the GitLab CI/CD Variable and/or Azure App Service setting — never commit the new value anywhere, including chat or this repo's docs.
+5. **If Azure access itself is lost**: this is the true single point of failure — there is no documented secondary owner today. Action item: add a second Azure AD user as Owner/Contributor on `ams-rg` as a standing backup, not just during an incident.
+
+### Standing action items (from risk register P-01/P-02)
+
+- [ ] Add a second person as Contributor (or Owner) on the `ams-rg` Azure resource group.
+- [ ] Confirm at least one teammate besides Abhishek has Maintainer role on GitLab and Admin role on GitHub.
+- [ ] Store a redacted list of "which variable lives where" (this section) somewhere the whole team can find it — done, here.
+- [ ] Do a dry-run: have the backup person walk through steps 1–3 above without actually changing anything, to confirm the access grants work before they're needed in an emergency.
