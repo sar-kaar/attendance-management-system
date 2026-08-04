@@ -45,11 +45,14 @@ Backend and frontend are **both substantially built and deployed** (Azure App Se
 | Dashboard UI (frontend widgets for the backend-complete dashboard endpoints) | Ekata | GitHub #1 (US-10) |
 | ECA (extra-curricular activity) tracking | Ekata | GitHub #23 (US-12) |
 | Notifications (email/SMS) | Unassigned | Phase 7, not started, see [phases.md](phases.md) |
-| SRS Document (IEEE 830) | Prizma | GitHub #5 (T-003) — **drafted** 2026-08-04, see [srs.md](srs.md); needs Prizma/team review, not yet a sign-off |
-| Requirements Gathering doc | Prizma | GitHub #7 (T-002) — **drafted** 2026-08-04, see [requirements-gathering.md](requirements-gathering.md); needs Prizma/team review |
-| Wireframes and Mockups (formal) | Prizma | GitHub #11 (T-005) — note: `wireframes/*.html` already exist as static mockups; unclear if this issue means something further |
-| Project Charter | Prizma | GitHub #8 (T-007) — **already exists** as a Google Doc (`Project Charter (AMS).gdoc` shortcut at repo root, PACT/SWOT/PESTLE analysis complete), but its Technologies section is stale (lists Node.js/Express/MySQL; actual stack is Django/DRF/PostgreSQL per [tech-stack.md](tech-stack.md)) — needs a content update, not a rewrite |
-| Team Norms and Comms Plan | Prizma | GitHub #12 (T-008) — **already substantially covered** by `Weekly Tasks/TEAM_SYNC_PROTOCOL.md` (daily standup format, escalation process, EOD logging) and `Weekly Tasks/GIT_WORKFLOW.md` (branch/PR/commit conventions) — likely just needs the issue closed/linked rather than new content |
+| SRS Document (IEEE 830) | Prizma | GitHub #5 (T-003) — **closed on GitHub since 2026-07-30** (board: Done), but no artifact existed until **drafted 2026-08-04**, see [srs.md](srs.md); needs Prizma/team review |
+| Requirements Gathering doc | Prizma | GitHub #7 (T-002) — **closed on GitHub since 2026-07-30** (board: Done), but no artifact existed until **drafted 2026-08-04**, see [requirements-gathering.md](requirements-gathering.md); needs Prizma/team review |
+| Wireframes and Mockups (formal) | Prizma | GitHub #11 (T-005) — closed, board: Done; genuinely exists as `wireframes/*.html` |
+| Project Charter | Prizma | GitHub #8 (T-007) — closed, board: Done; **already exists** as a Google Doc (`Project Charter (AMS).gdoc` shortcut at repo root, PACT/SWOT/PESTLE analysis complete), but its Technologies section is stale (lists Node.js/Express/MySQL; actual stack is Django/DRF/PostgreSQL per [tech-stack.md](tech-stack.md)) — needs a content update, not a rewrite |
+| Team Norms and Comms Plan | Prizma | GitHub #12 (T-008) — closed, board: Done; **already substantially covered** by `Weekly Tasks/TEAM_SYNC_PROTOCOL.md` (daily standup format, escalation process, EOD logging) and `Weekly Tasks/GIT_WORKFLOW.md` (branch/PR/commit conventions) |
+| Risk Management writeup | Prizma | GitHub **#51 — still open**, opened 2026-07-27, the same day the "AMS - User Story Dependencies & Risks" sheet (see External Trackers below) was created — that sheet is the deliverable behind this issue |
+
+> **Note (2026-08-04):** #5, #7, #8, #11, #12 were all closed on GitHub in a single batch on 2026-07-30 with zero comments and no linked PR on any of them. For #8/#11/#12 a real artifact genuinely exists elsewhere (verified above). For #5/#7, no artifact existed anywhere until this session wrote them — those two issues were likely closed administratively without an attached deliverable. Don't trust "issue closed" as proof of "deliverable exists" without checking, going forward.
 
 ## Known Bugs / Open Issues
 
@@ -142,5 +145,5 @@ Branch: `ams`. Prior session's `HANDOFF.md` (2026-07-20) noted `develop` was ahe
 Project status also lives in team-managed Google Sheets (not in this repo, so they can drift — this file remains the code-verified source of truth per ADR-007):
 
 - **"Attendance Management System – Master Tracker"** — sprint board, feature backlog, bug tracker, release planning (owner: `abhishekrokaya.s24@mitnepal.edu.np`).
-- **"AMS - User Story Dependencies & Risks"** — user-story dependency chains, technical risk register (R-01–R-33), user-story status matrix, and team/process risk register (P-01–P-10, W-01–W-12). Most current and detailed risk source; cross-check before treating any risk there as still open (e.g. R-07/W-08 predates the fix documented above).
+- **"AMS - User Story Dependencies & Risks"** (https://docs.google.com/spreadsheets/d/1BRHCixRfskt6hvGgwYHx0g14h1ZX58ru2uIgd7bozn8) — user-story dependency chains, technical risk register (R-01–R-33), user-story status matrix, and team/process risk register (P-01–P-10, W-01–W-12). Created 2026-07-27, the same day as GitHub issue #51 ("Risk Management") — that issue is the assignment prompt this sheet answers, and is still open even though the sheet itself is substantial. Most current and detailed risk source; cross-check before treating any risk there as still open (e.g. R-07/W-08 predates the fix documented above — needs updating in the sheet to "Mitigated").
 - **"Attendance Management System - Project Tracker"** — an early (2026-07-07/08) sprint-planning template, stale and unmaintained since day 2 of the project; do not treat as current (same caveat as `Guidelines/03_PROJECT_TRACKER.csv`).
