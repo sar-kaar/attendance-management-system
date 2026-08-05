@@ -2,7 +2,7 @@
 
 > **Purpose:** Persistent, living project status for both humans and AI coding agents. **Update this file after every major implementation.**
 > **Scope:** Current state only — historical narrative belongs in `HANDOFF.md` (session logs) or [decisions.md](decisions.md) (why a decision was made), not here.
-> **Last updated:** 2026-08-04 · **Version:** 1.5 (see [decisions.md](decisions.md) ADR-007 for why this file exists and supersedes older status docs)
+> **Last updated:** 2026-08-05 · **Version:** 1.6 (see [decisions.md](decisions.md) ADR-007 for why this file exists and supersedes older status docs)
 
 ## Table of Contents
 
@@ -43,15 +43,15 @@ Backend and frontend are **both substantially built and deployed** (Azure App Se
 
 | Feature | Owner | Tracking |
 |---|---|---|
-| Dashboard UI (frontend widgets for the backend-complete dashboard endpoints) | Ekata | GitHub #1 (US-10) — **partially done 2026-08-04**: admin User Management page (`Users.jsx`) added, Dashboard.jsx now role-aware (labels, Faculty Performance panel), nav is role-filtered. Master Data Bulk Import UI (#21) still not built — deliberately left as its own follow-up rather than half-built. |
-| ECA (extra-curricular activity) tracking | Ekata | GitHub #23 (US-12) |
+| Master Data Bulk Import UI (file upload + dry-run preview) | Ekata | GitHub #1 **closed 2026-08-05** (acceptance criteria satisfied by current `Dashboard.jsx`); remaining scope now tracked as **#48**, re-scoped down to just this one gap. Backend (`POST /api/dashboard/master-data/import/`) already done. |
+| ECA (extra-curricular activity) tracking | sar-kaar (backend model first) | GitHub #23 (US-12) — corrected 2026-08-05: assigned to `sar-kaar`, not Ekata as this doc previously said; blocked on a backend model that doesn't exist yet (risk R-20/US-D7) |
 | Notifications (email/SMS) | Unassigned | Phase 7, not started, see [phases.md](phases.md) |
 | SRS Document (IEEE 830) | Prizma | GitHub #5 (T-003) — **closed on GitHub since 2026-07-30** (board: Done), but no artifact existed until **drafted 2026-08-04**, see [srs.md](srs.md); needs Prizma/team review |
 | Requirements Gathering doc | Prizma | GitHub #7 (T-002) — **closed on GitHub since 2026-07-30** (board: Done), but no artifact existed until **drafted 2026-08-04**, see [requirements-gathering.md](requirements-gathering.md); needs Prizma/team review |
 | Wireframes and Mockups (formal) | Prizma | GitHub #11 (T-005) — closed, board: Done; genuinely exists as `wireframes/*.html` |
 | Project Charter | Prizma | GitHub #8 (T-007) — closed, board: Done; **already exists** as a Google Doc (`Project Charter (AMS).gdoc` shortcut at repo root, PACT/SWOT/PESTLE analysis complete), but its Technologies section is stale (lists Node.js/Express/MySQL; actual stack is Django/DRF/PostgreSQL per [tech-stack.md](tech-stack.md)) — needs a content update, not a rewrite |
 | Team Norms and Comms Plan | Prizma | GitHub #12 (T-008) — closed, board: Done; **already substantially covered** by `Weekly Tasks/TEAM_SYNC_PROTOCOL.md` (daily standup format, escalation process, EOD logging) and `Weekly Tasks/GIT_WORKFLOW.md` (branch/PR/commit conventions) |
-| Risk Management writeup | Prizma | GitHub **#51 — still open**, opened 2026-07-27, the same day the "AMS - User Story Dependencies & Risks" sheet (see External Trackers below) was created — that sheet is the deliverable behind this issue |
+| Risk Management writeup | Prizma | GitHub **#51 — still open** (left open deliberately, it's a PM/course deliverable), opened 2026-07-27, the same day the "AMS - User Story Dependencies & Risks" sheet (see External Trackers below) was created — that sheet is the deliverable behind this issue |
 
 > **Note (2026-08-04):** #5, #7, #8, #11, #12 were all closed on GitHub in a single batch on 2026-07-30 with zero comments and no linked PR on any of them. For #8/#11/#12 a real artifact genuinely exists elsewhere (verified above). For #5/#7, no artifact existed anywhere until this session wrote them — those two issues were likely closed administratively without an attached deliverable. Don't trust "issue closed" as proof of "deliverable exists" without checking, going forward.
 
@@ -59,8 +59,7 @@ Backend and frontend are **both substantially built and deployed** (Azure App Se
 
 - **Social login buttons missing on the live site (found 2026-08-04)**: `SocialLogin.jsx` renders nothing (`if (!configured) return null`) unless `VITE_GOOGLE_CLIENT_ID`/`VITE_FACEBOOK_APP_ID` are set at `npm run build` time. `.gitlab-ci.yml`'s `build-frontend` job never set them, and `backend/scripts/push_gitlab_vars.py`/`stage_gitlab_vars.py` never pushed them to GitLab CI/CD variables in the first place — only the backend-side `GOOGLE_CLIENT_ID`/`FACEBOOK_APP_ID` were ever created. Fixed: both scripts now also emit `VITE_GOOGLE_CLIENT_ID`/`VITE_FACEBOOK_APP_ID` (same public values, duplicated under the Vite-prefixed name), and `.gitlab-ci.yml`'s `build-frontend` job now passes them through explicitly with a build-time warning if unset. **Action still needed**: run `python backend/scripts/push_gitlab_vars.py` (requires `GITLAB_TOKEN` and the local credential source files) to actually create the two new GitLab CI/CD variables, or add them manually in GitLab → Settings → CI/CD → Variables using the same values already in `GOOGLE_CLIENT_ID`/`FACEBOOK_APP_ID`. Until that's done, the next frontend deploy will still ship without social login.
 
-- **Issue numbering collision**: two open GitHub issues both titled "US-10" — #1 (Dashboard UI, frontend, genuinely open) and #24 (Chronic Latecomers Detection, backend, actually done via PR #30). Not urgent, but confusing in triage — flagged in `HANDOFF.md`.
-- **Stale-but-done issues not closed**: PR #30 ("Dashboard API — US-06 to US-13", merged 2026-07-18) implemented #19, #17, #18, #20, #21, #22 but none were closed. Recommend closing after a sanity check against the live `/api/dashboard/*` endpoints.
+- **Issue title/AC-body mismatch bug (found + fixed 2026-08-05)**: issues #17, #18, #19, #20, #21, #22, #23, #24 all had a correct title matching shipped code, but an Acceptance-Criteria body copied from a *different* issue — a bulk-import artifact from the original Google-Sheets → GitHub issue generation. All 7 implemented ones (#17–#22, #24) closed with a comment explaining the mismatch (verified against `backend/dashboard/urls.py`, not the stale AC text); #23 (ECA Tracking) left open since it's genuinely unimplemented. If anyone reads an AC body on one of these issues going forward, don't trust it literally — check the title against real code instead.
 - **Azure Face provider unverified end-to-end**: `FACE_PROVIDER=azure` is implemented (`backend/face/providers.py`) but only exercised locally, not against a real Azure Face resource in an end-to-end run.
 - **`Guidelines/REALITY_CHECK.md` and `Guidelines/03_PROJECT_TRACKER.csv` are stale** — the former claims no frontend exists (false); the latter still shows Sprint 1 in progress. Both are kept for historical/course-deliverable purposes but must not be treated as current status. `HANDOFF.md` also flags this.
 - **`docs/system-architecture.md`** predates the `face` and `dashboard` apps and the working CI/CD — `docs/architecture.md` (this effort) is now the current reference; `system-architecture.md`'s Mermaid diagrams/SVGs are kept for the parts still accurate (core auth/attendance flow) but the app/endpoint lists there are outdated.
@@ -68,7 +67,7 @@ Backend and frontend are **both substantially built and deployed** (Azure App Se
 ## Technical Debt
 
 - ~~No Python linter configured for `backend/`~~ — resolved 2026-07-26: `ruff` added and CI-enforced in both `.gitlab-ci.yml` and `.github/workflows/ci.yml` (see Completed Features and Files Modified/Created).
-- ~~Bug found by the ruff pass~~ — re-investigated 2026-07-26 and reclassified: not a bug. `report()`'s `qs = self.get_queryset()` call already applies `course`/`student` filtering (via `get_queryset()`'s own query-param handling), so the two local vars were dead code, not a missing filter. Resolved — see Completed Features. (This superseded an earlier draft of this note that called it an unfixed bug; that draft was committed by mistake alongside unresolved merge-conflict markers and cleaned up 2026-08-04. The risk register's R-07 still needs updating to reflect "Mitigated" instead of "Open".)
+- ~~Bug found by the ruff pass~~ — re-investigated 2026-07-26 and reclassified: not a bug. `report()`'s `qs = self.get_queryset()` call already applies `course`/`student` filtering (via `get_queryset()`'s own query-param handling), so the two local vars were dead code, not a missing filter. Resolved — see Completed Features. (This superseded an earlier draft of this note that called it an unfixed bug; that draft was committed by mistake alongside unresolved merge-conflict markers and cleaned up 2026-08-04. The risk register's R-07 was updated to "Mitigated" on 2026-08-05.)
 - No frontend automated test suite (Vitest/RTL not set up) — see [testing.md](testing.md).
 - No coverage gate in CI (backend tests run, but no minimum-coverage enforcement).
 - `Student` (in `students` app) and `accounts.User` (role=`student`) are not FK-linked — a design gap noted in `docs/database-schema.md`, not yet resolved.
@@ -120,21 +119,21 @@ See [decisions.md](decisions.md) for full ADRs. Most recent: ADR-007 (this memor
 
 ## Current Branch Status
 
-Branch: `ams`. Prior session's `HANDOFF.md` (2026-07-20) noted `develop` was ahead of both `origin` and `gitlab` remotes and needed pushing — verify current remote sync state with `git log --oneline --graph --all` before assuming this is still accurate, since it may have been resolved since.
+Branch: `develop`. A stuck merge of `origin/develop` into `develop` (9 files, conflict markers left from a prior session) was resolved 2026-08-05 — 88 backend tests pass. Pushed to both `origin/develop` and `gitlab/develop` (test-only pipeline, no deploy). `gitlab main` has **not** been pushed/merged — that triggers a real Azure production deploy and needs an explicit separate go-ahead.
 
 ## Current Priorities
 
-1. Verify this documentation effort didn't break anything (`Validation` section — run frontend build, backend `manage.py check`).
-2. Close the stale-but-implemented dashboard issues (#19, #17, #18, #20, #21, #22) after confirming against `/api/dashboard/*`.
-3. Finish Dashboard UI (#1) and ECA Tracking (#23) on the frontend.
-4. Chase PM deliverables (#7, #5, #11, #8, #12) — all overdue against the original Week 1–2 checklist.
+1. Master Data Bulk Import UI (#48's remaining scope) — file upload + dry-run preview against `POST /api/dashboard/master-data/import/`.
+2. ECA Tracking backend model (#23) — blocks any frontend work on that story.
+3. Project Charter tech-stack fix (#8) — blocked on Prizma directly, no API edit/comment access to her doc.
+4. Confirm #36/#38 (mobile) board status before Sprint 2 starts 2026-08-09 — flagged as likely stale (zero mobile code exists), not changed unilaterally.
 
 ## Next Recommended Tasks
 
 1. Verify `FACE_PROVIDER=azure` end-to-end against a real Azure Face resource (see [decisions.md](decisions.md) ADR-002 consequences).
 2. Stand up a minimal Vitest smoke test for the frontend so a test step can be added to CI.
 3. Retire or refresh `Guidelines/03_PROJECT_TRACKER.csv`.
-4. Update the "AMS - User Story Dependencies & Risks" tracker (Google Sheet, see External Trackers below) — R-07/W-08 report-filter bug should move from "Open" to "Mitigated".
+4. Decide on and execute a `gitlab main` push — deliberately, since it deploys to production.
 
 ## Important Implementation Notes
 
@@ -148,5 +147,5 @@ Branch: `ams`. Prior session's `HANDOFF.md` (2026-07-20) noted `develop` was ahe
 Project status also lives in team-managed Google Sheets (not in this repo, so they can drift — this file remains the code-verified source of truth per ADR-007):
 
 - **"Attendance Management System – Master Tracker"** — sprint board, feature backlog, bug tracker, release planning (owner: `abhishekrokaya.s24@mitnepal.edu.np`).
-- **"AMS - User Story Dependencies & Risks"** (https://docs.google.com/spreadsheets/d/1BRHCixRfskt6hvGgwYHx0g14h1ZX58ru2uIgd7bozn8) — user-story dependency chains, technical risk register (R-01–R-33), user-story status matrix, and team/process risk register (P-01–P-10, W-01–W-12). Created 2026-07-27, the same day as GitHub issue #51 ("Risk Management") — that issue is the assignment prompt this sheet answers, and is still open even though the sheet itself is substantial. Most current and detailed risk source; cross-check before treating any risk there as still open (e.g. R-07/W-08 predates the fix documented above — needs updating in the sheet to "Mitigated").
+- **"AMS - User Story Dependencies & Risks"** (https://docs.google.com/spreadsheets/d/1BRHCixRfskt6hvGgwYHx0g14h1ZX58ru2uIgd7bozn8) — user-story dependency chains, technical risk register (R-01–R-33) on the "Risk Analysis" tab, user-story status matrix, and a separate team/process risk register (P-01–P-10, W-01–W-12) on the "Personal & Work Risks" tab. Created 2026-07-27, the same day as GitHub issue #51 ("Risk Management") — that issue is the assignment prompt this sheet answers, and is still open even though the sheet itself is substantial. Most current and detailed risk source. **R-07 (report filter) updated to "Mitigated" 2026-08-05** — note it is a distinct risk from **W-08** (Azure Face verification, "Personal & Work Risks" tab), which is still genuinely open; a prior version of this doc incorrectly implied they were the same risk.
 - **"Attendance Management System - Project Tracker"** — an early (2026-07-07/08) sprint-planning template, stale and unmaintained since day 2 of the project; do not treat as current (same caveat as `Guidelines/03_PROJECT_TRACKER.csv`).
