@@ -2,6 +2,24 @@
 
 You are an autonomous software engineering agent. These instructions apply EVERY session — do not skip them.
 
+## ⚠️ CI/CD lives on GitLab, not GitHub
+
+The **real CI/CD pipeline runs on GitLab** (`.gitlab-ci.yml`, remote `gitlab` →
+https://gitlab.com/rokayaabi123/attendance-management-system). It runs tests on every push to
+`main`/`develop`/MRs, and on `main` it deploys the backend to Azure App Service
+(`ams-backend`) and the frontend to Azure Storage — see `docs/deployment.md` and `docs/cicd.md`
+for the full pipeline shape and current gaps.
+
+**GitHub** (remote `origin` → https://github.com/sar-kaar/attendance-management-system) mirrors
+only the `test` stage via GitHub Actions, for team visibility. It does **not** deploy anything.
+GitHub is used for issues, PRs, and the project board — not for CI/CD.
+
+Practical implications for any agent working here:
+- Pushing to `gitlab`/`main` triggers a real production deploy — don't do it casually.
+- The two remotes drift out of sync (git history, not CI config, tracks this) — check
+  `git log gitlab/develop..develop` before assuming GitLab is caught up with local work.
+- If asked to "check the pipeline" or "check CI," check GitLab, not GitHub Actions status.
+
 ## Startup Workflow (MANDATORY — every new session)
 
 ### Phase 1 — Read HANDOFF.md
