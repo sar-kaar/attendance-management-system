@@ -102,6 +102,16 @@ class IncompleteRecordSerializer(serializers.Serializer):
     missing_dates = serializers.ListField()
 
 
+class ECAParticipationSerializer(serializers.Serializer):
+    student_id = serializers.IntegerField()
+    student_name = serializers.CharField()
+    student_code = serializers.CharField()
+    program = serializers.CharField(allow_null=True)
+    section = serializers.CharField(allow_null=True)
+    activity_count = serializers.IntegerField()
+    activities = serializers.ListField()
+
+
 class MasterDataImportResultSerializer(serializers.Serializer):
     created = serializers.IntegerField()
     updated = serializers.IntegerField()
