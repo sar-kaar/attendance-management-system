@@ -2,7 +2,7 @@
 
 > **Purpose:** Persistent, living project status for both humans and AI coding agents. **Update this file after every major implementation.**
 > **Scope:** Current state only — historical narrative belongs in `HANDOFF.md` (session logs) or [decisions.md](decisions.md) (why a decision was made), not here.
-> **Last updated:** 2026-08-05 · **Version:** 1.6 (see [decisions.md](decisions.md) ADR-007 for why this file exists and supersedes older status docs)
+> **Last updated:** 2026-08-05 · **Version:** 1.7 (see [decisions.md](decisions.md) ADR-007 for why this file exists and supersedes older status docs)
 
 ## Table of Contents
 
@@ -89,6 +89,12 @@ See [decisions.md](decisions.md) for full ADRs. Most recent: ADR-007 (this memor
 - `docs/tech-stack.md`, `docs/package-guidelines.md`, `docs/coding-standards.md`, `docs/api-standards.md`, `docs/database-standards.md`, `docs/testing-strategy.md`, `docs/security-standards.md`, `docs/cicd.md`, `docs/versioning.md`, `docs/release-process.md`, `docs/development-guide.md` — enterprise engineering-foundation pass (2026-07-26, second session): final tech stack with rationale, planned `packages/` boundaries (design only, not implemented), and standards for coding/API/DB/testing/security/CI-CD/versioning/release/workflow. Each cross-references rather than duplicates the operational docs above (e.g. `security-standards.md` is the rule set, `security.md` stays the status/gap report).
 - `.editorconfig`, `.prettierrc`, `.prettierignore`, `.gitattributes` (root)
 
+**Modified (2026-08-05 session — cross-system doc/sheet completeness pass)**:
+
+- `AGENTS.md` — rewrote the Startup Workflow: fixed the stale "HANDOFF.md is source of truth" claim (it's `docs/memory.md`, per ADR-007), added explicit phases for checking GitHub Issues/Project board and both Google Sheets, added a "Golden rule" (trust code over docs). Updated Documentation Rules to cover `memory.md` and the sheets, not just `HANDOFF.md`.
+- Master Tracker Google Sheet — updated tabs: "1. Project Overview" (progress/sprint/phase), "34. Progress Dashboard" (real sprint completion, added a note that the sprint model is mobile-centric and doesn't capture the already-complete web MVP), "3. Functional Requirements" (corrected 4 rows from stale "Planned" to "Completed", added 2 missing rows), "20. Bug Tracker" (replaced 3 unverifiable placeholder bugs with a note + added 3 real, verified entries), "26. Dependencies" (was Flutter/Firebase from an abandoned plan — replaced with the real Django/DRF + React + Expo dependency list, corrected to match ADR-008), "9. GitHub Issues" (was empty — added a live snapshot), "31. AI Task Tracker" (was one stale row — added real completed-work history), "33. Agent Instructions" (was a 4-row generic placeholder — rewritten as the canonical cross-system onboarding doc, see External Trackers below).
+- Risk Google Sheet, "Risk Mitigation Plan" tab — R-07 status corrected from "Open" to "Mitigated" (this tab hadn't been updated even though the sibling "Risk Analysis" tab had been); added new row R-34 for the social-login-missing-in-production bug.
+
 **Created (2026-08-04 session — overdue PM deliverables + risk/docs cleanup)**:
 
 - `docs/srs.md` — Software Requirements Specification, IEEE 830 format, derived from `prd.md`/`architecture.md`/`database-schema.md` and cross-checked against actual code.
@@ -144,8 +150,14 @@ Branch: `develop`. A stuck merge of `origin/develop` into `develop` (9 files, co
 
 ## External Trackers
 
+> **Any agent starting work here should also read `AGENTS.md`'s Startup Workflow** — it now walks
+> through checking GitHub Issues/Project board and both sheets below before making changes, and the
+> Master Tracker's own **"33. Agent Instructions"** tab is the canonical cross-system onboarding doc
+> (rewritten 2026-08-05 after stale sheets/issues caused real merge conflicts between concurrent
+> agent sessions).
+
 Project status also lives in team-managed Google Sheets (not in this repo, so they can drift — this file remains the code-verified source of truth per ADR-007):
 
-- **"Attendance Management System – Master Tracker"** — sprint board, feature backlog, bug tracker, release planning (owner: `abhishekrokaya.s24@mitnepal.edu.np`).
-- **"AMS - User Story Dependencies & Risks"** (https://docs.google.com/spreadsheets/d/1BRHCixRfskt6hvGgwYHx0g14h1ZX58ru2uIgd7bozn8) — user-story dependency chains, technical risk register (R-01–R-33) on the "Risk Analysis" tab, user-story status matrix, and a separate team/process risk register (P-01–P-10, W-01–W-12) on the "Personal & Work Risks" tab. Created 2026-07-27, the same day as GitHub issue #51 ("Risk Management") — that issue is the assignment prompt this sheet answers, and is still open even though the sheet itself is substantial. Most current and detailed risk source. **R-07 (report filter) updated to "Mitigated" 2026-08-05** — note it is a distinct risk from **W-08** (Azure Face verification, "Personal & Work Risks" tab), which is still genuinely open; a prior version of this doc incorrectly implied they were the same risk.
+- **"Attendance Management System – Master Tracker"** (https://docs.google.com/spreadsheets/d/1Tr8JOwc4HTXpyPvXP2LaV0pTpCRSuePEjo4AURUln2Y) — 34 tabs: project overview, requirements, sprint board, feature backlog, GitHub issues/PRs snapshots, bug tracker, dependencies, risks, and the **"33. Agent Instructions"** onboarding tab. Most tabs were stale placeholders ("Planned" for things that were actually done) as of 2026-08-04; corrected 2026-08-05 for Project Overview, Progress Dashboard, Functional Requirements, Bug Tracker, Dependencies, GitHub Issues, AI Task Tracker, and Agent Instructions — the remaining tabs (Non-Functional Requirements, Sprint Board, Feature Backlog, Web/Mobile Development, UI Components, Design System, Testing, Security Checklist, Release Planning, Documentation Tracker, Changelog, API Inventory, Architecture Decisions, Database Schema, DevOps, Dependencies-chain-adjacent tabs) were **not** touched in that pass and may still be stale — verify before trusting.
+- **"AMS - User Story Dependencies & Risks"** (https://docs.google.com/spreadsheets/d/1BRHCixRfskt6hvGgwYHx0g14h1ZX58ru2uIgd7bozn8) — user-story dependency chains, technical risk register (R-01–R-33) on the "Risk Analysis" tab, user-story status matrix, a team/process risk register (P-01–P-10, W-01–W-12) on the "Personal & Work Risks" tab, and a combined action-item view on the **"Risk Mitigation Plan"** tab. Created 2026-07-27, the same day as GitHub issue #51 ("Risk Management") — that issue is the assignment prompt this sheet answers; **#51 is now closed** (was previously incorrectly noted here as still open). Most current and detailed risk source. **R-07 (report filter) is "Mitigated" as of 2026-08-05 on both the Risk Analysis and Risk Mitigation Plan tabs** — note it is a distinct risk from **W-08** (Azure Face verification), which is still genuinely open. **New row R-34 added 2026-08-05** on the Risk Mitigation Plan tab for the social-login-missing-in-production bug (see Known Bugs above) — code fixed, GitLab CI/CD variable creation still a pending manual step.
 - **"Attendance Management System - Project Tracker"** — an early (2026-07-07/08) sprint-planning template, stale and unmaintained since day 2 of the project; do not treat as current (same caveat as `Guidelines/03_PROJECT_TRACKER.csv`).
