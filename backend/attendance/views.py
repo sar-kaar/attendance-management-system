@@ -14,8 +14,13 @@ from rest_framework.response import Response
 from courses.models import Course, Enrollment
 from students.models import Student
 
-from .models import Attendance, AttendanceCode
-from .serializers import AttendanceCodeSerializer, AttendanceSerializer, BulkAttendanceSerializer
+from .models import Attendance, AttendanceCode, ECAActivity
+from .serializers import (
+    AttendanceCodeSerializer,
+    AttendanceSerializer,
+    BulkAttendanceSerializer,
+    ECAActivitySerializer,
+)
 from .stats import attendance_counts
 
 
@@ -284,6 +289,32 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.role == 'admin'
+
+
+class ECAActivityViewSet(viewsets.ModelViewSet):
+    queryset = ECAActivity.objects.all()
+    serializer_class = ECAActivitySerializer
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), IsAdminOrFaculty()]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        category = self.request.query_params.get('category')
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        if category:
+            qs = qs.filter(category=category)
+        if start_date:
+            qs = qs.filter(date__gte=start_date)
+        if end_date:
+            qs = qs.filter(date__lte=end_date)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
 
 
 class AttendanceCodeViewSet(viewsets.ModelViewSet):

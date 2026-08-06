@@ -13,6 +13,9 @@ class Course(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['code']
+
     def __str__(self):
         return f"{self.code} - {self.name}"
 
@@ -25,6 +28,7 @@ class Enrollment(models.Model):
 
     class Meta:
         unique_together = ['student', 'course']
+        ordering = ['-enrolled_date', 'id']
 
     def __str__(self):
         return f"{self.student} -> {self.course}"

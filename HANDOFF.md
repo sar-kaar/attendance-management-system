@@ -1,6 +1,6 @@
 # HANDOFF — Attendance Management System
 
-> Last updated: 2026-08-04
+> Last updated: 2026-08-05
 > **Canonical status doc is [docs/memory.md](docs/memory.md) per ADR-007** — this file is a human-facing session handoff, kept in sync with it but memory.md wins on any disagreement.
 
 ---
@@ -14,6 +14,7 @@
 | GitHub Project board | https://github.com/users/sar-kaar/projects/5 ("Attendance Management System", 23 items) |
 | GitLab repo (CI/CD) | https://gitlab.com/rokayaabi123/attendance-management-system |
 | Trello | https://trello.com/b/ecB6ppQa/attendance-management-system |
+| Google Drive (MIT account, consolidated) | https://drive.google.com/drive/folders/1Ntq3s7vrMrwNzAYcUl_oxsbyLCW53Mfm |
 | Live backend | https://ams-backend.azurewebsites.net |
 | Layout | `backend/` (Django + DRF) and `frontend/` (React + Vite) as independent top-level projects |
 | Django apps | `accounts`, `students`, `courses`, `attendance`, `face`, `dashboard` |
@@ -90,6 +91,35 @@ Backend test suite runs in GitLab CI on every push to `main`/`develop` and on MR
 
 ## Pending work
 
+### Session update — 2026-08-06
+
+- **Mobile auth flow committed (`106c262`, `feat: add mobile auth flow (login, register, email OTP verification)`)**: completed + verified the in-progress mobile auth work. New `mobile/src/screens/auth/RegisterScreen.tsx` + `VerifyOtpScreen.tsx`; `LoginScreen.tsx`, `AuthContext.tsx`, `AuthNavigator.tsx`, `services/api.ts` extended. JWT tokens in SecureStore with auto-refresh interceptor; silent session restore on boot; role-based routing in `RootNavigator`. Typecheck + lint clean; contracts verified live against the running backend (register→login→me). Committed **only** the 6 mobile files — the concurrent uncommitted backend-model/`Meta.options` + migrations + frontend page changes in the tree were left untouched (another agent's work in progress).
+
+- **Drive consolidation + cleanup completed**: all deliverables now live in one Google Drive folder on the MIT account (URL in the overview table above), including the new **"AMS - Resource Labeling Register"** sheet (33 resource rows, 10 columns, cost total 157,740 NPR from `Cost Estimation (AMS).md`). Team policy: the folder holds only word/google-doc + Google Sheet deliverables — no
+  `.md`** (those live in GitHub/local). Converted `Cost Estimation (AMS).md` → native Google Doc
+  `Cost Estimation (AMS)`, then moved **all 75 `.md` files** in the folder to Drive Trash
+  (recoverable) and trashed the now-empty `docs/`, `Weekly Tasks/`, `frontend/`, `mobile/` folders.
+  Kept: `Problem statement (AMS).docx`, `Cost Estimation (AMS)` (Google Doc), 5 sheets (Master
+  Tracker, Risk & Dependencies, Resource Register, Project Tracker, SWOT), and `Guidelines/`
+  (`.xlsx`, `.pdf`, `.csv`).
+- **Google Sheets audit**: Master Tracker (34 tabs), Risk & Dependencies (6 tabs), and Resource
+  Register are the live trackers; SWOT Analysis and the early Project Tracker sheet (11 tabs) are
+  kept as deliverables. **Trashed**: "Attendance" (literal app test data), "Attendance Management
+  System" (early agile planning, superseded by Master Tracker), "AMS Project Prompt and Planning"
+  (AI-prompt scratch), and "Attendance Management System - Project Tracker.xlsx" (duplicate export
+  of the Project Tracker sheet).
+
+### Session update — 2026-08-05
+
+- **Resolved a stuck `git merge` of `origin/develop` into `develop`** (9 files, `UU` conflicts) that was blocking all further work — every hunk resolved by keeping the side that was actually referenced/used elsewhere in the codebase (verified via grep, not guessed). 88 backend tests pass post-merge. Merge commit `f94029e`, pushed to `origin/develop` and `gitlab/develop` (the latter only runs tests on `develop`, no deploy — see CI/CD note below).
+- **Found a systemic issue-data bug**: issues #17, #18, #19, #20, #21, #22, #24 all have a title that correctly matches shipped code, but an **Acceptance-Criteria body that belongs to a different issue** (looks like a shuffle from the original Google-Sheets → GitHub bulk import). Verified each real endpoint against `backend/dashboard/urls.py` and closed all 7 as backend-done (PR #30, covered by the 88-test suite) — comments on each issue explain the mismatch so nobody chases the stale AC text later. **#23 (ECA Tracking) has the same title/body mismatch but is genuinely unimplemented** (no model, no endpoint) — left open, comment added correcting it's assigned to `sar-kaar` (not Ekata as previously written here).
+- **Closed #1** (Dashboard UI) — its 3 acceptance criteria (layout, widgets, charts) are all satisfied by the current `Dashboard.jsx`. **#48 stays open**, re-scoped down to its one remaining real gap: Master Data Bulk Import UI (backend done, no frontend yet).
+- **#51 (Risk Management)** — left open (PM/course deliverable, not mine to close), but commented linking the risk sheet and noting R-07 was updated.
+- **Updated the "AMS - User Story Dependencies & Risks" Google Sheet**: R-07 (`Risk Analysis` tab) moved Open → Mitigated with a corrected description. Note: W-08 in the `Personal & Work Risks` tab is a *different* risk (Azure Face verification) — this file previously conflated "R-07/W-08" as the same thing; they aren't. W-08 is still genuinely open.
+- **Project Charter tech-stack fix — blocked, not done.** The doc (`Project Charter (AMS).gdoc`) is owned by Prizma with only public read access; no edit or comment permission available via API. Needs a direct ask to Prizma, not something an agent can action.
+- **Verified #36/#38 mobile board-status mismatch is real** (via `gh project item-list 5 --owner sar-kaar`): both show "In Progress" for Sprint 2 (starts 2026-08-09) despite zero mobile code in the repo. Commented on #34 flagging it rather than silently changing the board — didn't want to guess whether work is happening outside this repo.
+- **Did not touch**: `FACE_PROVIDER=azure` end-to-end verification (needs a real Azure resource, out of scope for a doc/issue-hygiene pass), retiring `Guidelines/03_PROJECT_TRACKER.csv` / the stale "Project Tracker" sheet (deferred, no strong reason to prioritize this session).
+
 ### Prizma (PM) — see Corrections above; GitHub says Done, verify for real
 
 | Issue | Title | GitHub state | Reality |
@@ -97,25 +127,20 @@ Backend test suite runs in GitLab CI on every push to `main`/`develop` and on MR
 | #7 | T-002: Requirements Gathering | Closed (board: Done) | Now has a real artifact (`docs/requirements-gathering.md`, written 2026-08-04) |
 | #5 | T-003: SRS Document (IEEE 830) | Closed (board: Done) | Now has a real artifact (`docs/srs.md`, written 2026-08-04) |
 | #11 | T-005: Wireframes and Mockups | Closed (board: Done) | Real: `wireframes/*.html` |
-| #8 | T-007: Project Charter | Closed (board: Done) | Real, but tech-stack section is stale — needs a content fix |
+| #8 | T-007: Project Charter | Closed (board: Done) | Real, but tech-stack section is stale — needs a content fix. **Blocked**: no edit/comment access to the doc, needs Prizma directly (see session update above). |
 | #12 | T-008: Team Norms and Comms Plan | Closed (board: Done) | Real: `Weekly Tasks/TEAM_SYNC_PROTOCOL.md` + `GIT_WORKFLOW.md` |
-| #51 | Risk Management | **Open** | Produced the risk Google Sheet (see External Trackers link above) — issue itself is still open even though the deliverable behind it exists |
+| #51 | Risk Management | **Open** | Produced the risk Google Sheet (see External Trackers link above) — left open, it's a PM/course deliverable, not mine to close |
 
-### Ekata (Frontend) — still incomplete
+### Frontend — still incomplete
 
 | Issue | Title | Notes |
 |---|---|---|
-| #1 | US-10: Dashboard UI | Open. Overlaps with #48 (RBAC-aware dashboard UI/UX, board status "In Progress", Sprint 5) — confirm these two aren't duplicate/conflicting scope before both are worked. |
-| #23 | US-12: ECA Tracking | Open. No backend model exists yet either (risk R-20/US-D7) — this is blocked on backend work, not purely a frontend task. |
-
-### GitHub issue hygiene (long-standing, still not acted on)
-
-- PR #30 (*"Dashboard API — US-06 to US-13"*, merged 2026-07-18) implemented the backend for issues **#19 (US-06), #17 (US-07), #18 (US-08), #20 (US-09), #21 (US-11), #22 (US-13)** but none were closed — still open as of 2026-08-04. Recommend closing once confirmed working against live `/api/dashboard/*`.
-- Two open issues both titled "US-10": **#1** (Dashboard UI, frontend, genuinely open) and **#24** (Chronic Latecomers Detection, backend, actually done via PR #30, not yet closed). Numbering collision, not urgent, but confusing in triage.
+| #48 | RBAC-aware dashboard UI/UX (re-scoped 2026-08-05) | Open, narrowed to its one remaining gap: Master Data Bulk Import UI. #1 closed as satisfied/subsumed. |
+| #23 | US-12: ECA Tracking | Open, assigned to `sar-kaar` (not Ekata). No backend model exists yet either (risk R-20/US-D7) — blocked on backend work first. |
 
 ### Mobile epic (GitHub #34, 12 sub-issues, project board)
 
-Planning is complete (`docs/mobile-requirements.md`, `docs/mobile-architecture.md`, `docs/feature-matrix.md`, `docs/gap-analysis.md`, ADR-008). Sprint 2 "Mobile Core" starts 2026-08-09. No mobile code exists yet in this repo — see the board-status mismatch flagged in Corrections above before assuming #36/#38 are actually underway.
+Planning is complete (`docs/mobile-requirements.md`, `docs/mobile-architecture.md`, `docs/feature-matrix.md`, `docs/gap-analysis.md`, ADR-008). Sprint 2 "Mobile Core" starts 2026-08-09. No mobile code exists yet in this repo — #36/#38 board status flagged as likely stale, see session update above; not changed unilaterally.
 
 ---
 
@@ -132,15 +157,13 @@ Planning is complete (`docs/mobile-requirements.md`, `docs/mobile-architecture.m
 
 ## Next steps
 
-1. **Decide on and execute a GitLab push** — `develop` is 7 commits ahead of `gitlab/develop`; pushing triggers a real Azure deploy on `main`, so do this deliberately, not blindly.
-2. Verify #36/#38 board "In Progress" status against actual work — either update the board or confirm work is genuinely underway somewhere not reflected in this repo.
-3. Close the stale-but-implemented dashboard issues (#19, #17, #18, #20, #21, #22, #24) after a sanity check against `/api/dashboard/*`.
-4. Reconcile #1 (Dashboard UI) and #48 (RBAC-aware dashboard UI/UX) — confirm they're not overlapping/duplicate scope before Ekata works either.
-5. Chase Ekata on US-12 (ECA Tracking, #23) — also needs a backend model first (currently no owner for that half).
-6. Fix the Project Charter's stale tech-stack section (Node/MySQL → Django/DRF/PostgreSQL).
-7. Verify `FACE_PROVIDER=azure` end-to-end against a real Azure Face resource (risk R-11/W-08, still open).
-8. Retire or refresh `Guidelines/03_PROJECT_TRACKER.csv` and the "Attendance Management System - Project Tracker" Google Sheet — both stale, unmaintained since day 2 of the project (see `docs/memory.md` External Trackers).
-9. Update the "AMS - User Story Dependencies & Risks" sheet: R-07/W-08 (report filter) should move from "Open" to "Mitigated" now that it's confirmed not a bug.
+1. **Fix the Project Charter's stale tech-stack section** (Node/MySQL → Django/DRF/PostgreSQL) — blocked on Prizma directly, no API access to her doc (see session update above).
+2. Confirm with whoever's actually doing it whether #36/#38 (mobile) are genuinely underway before Sprint 2 starts 2026-08-09, or move the board status back to Todo.
+3. Build the Master Data Bulk Import UI (#48's remaining scope) — file upload + dry-run preview against `POST /api/dashboard/master-data/import/`.
+4. Design the ECA Tracking backend model (#23) — currently blocks any frontend work on that story.
+5. Verify `FACE_PROVIDER=azure` end-to-end against a real Azure Face resource (risk R-11/W-08, still open).
+6. Retire or refresh `Guidelines/03_PROJECT_TRACKER.csv` and the "Attendance Management System - Project Tracker" Google Sheet — both stale, unmaintained since day 2 of the project (see `docs/memory.md` External Trackers).
+7. Decide on a `gitlab main` push/merge — this is the one that triggers a real Azure production deploy, needs an explicit deliberate go-ahead (unlike `develop`, which was pushed this session and only runs tests).
 
 ---
 

@@ -86,6 +86,21 @@ tr:hover {
   color: #dc2626;
 }
 
+.badge.role-admin {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.badge.role-faculty {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.badge.role-student {
+  background: #fef3c7;
+  color: #d97706;
+}
+
 .actions {
   display: flex;
   gap: 8px;

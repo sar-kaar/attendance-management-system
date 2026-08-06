@@ -82,6 +82,7 @@ Mounted directly under `/api/` (not `/api/courses/`) — see `config/urls.py`.
 | GET | `attendance/export/csv/` | Admin, Faculty | CSV export of a report |
 | GET | `attendance/export/pdf/` | Admin, Faculty | PDF export (reportlab) |
 | GET/POST/PUT/DELETE | `attendance/codes/` | Admin, Faculty | `AttendanceCodeViewSet` — generate/manage self-check-in codes |
+| GET/POST/PUT/DELETE | `attendance/eca-activities/` | Admin, Faculty (write); Authenticated (read) | `ECAActivityViewSet` — extra-curricular activities a student can be marked `eca` against; `?category=`/`?start_date=`/`?end_date=` filters. An `Attendance` record can only set `eca_activity` when its own `status` is `eca` (enforced in `AttendanceSerializer.validate`). |
 
 ## Face Recognition — `/api/face/`
 
@@ -109,6 +110,7 @@ All read-only aggregation endpoints; each returns computed data over Student/Cou
 | GET | `dashboard/faculty-performance/` | Admin, Faculty | Faculty-level attendance/marking stats (faculty scoped to themselves only) |
 | GET | `dashboard/chronic-latecomers/` | Admin, Faculty | Students frequently marked `late` (faculty scoped to their own courses) |
 | GET | `dashboard/incomplete-records/` | Admin, Faculty | Sessions with missing/incomplete attendance (faculty scoped to their own courses) |
+| GET | `dashboard/eca/` | Admin, Faculty | Per-student ECA (extra-curricular activity) participation summary, `?program=`/`?section=` filters (faculty scoped to their own courses' students) |
 | POST | `dashboard/master-data/import/` | Admin | Bulk import students/courses |
 
 None of these endpoints are reachable by the `student` role — all `dashboard/*` views require `admin` or `faculty` (`IsAdminOrFaculty`), except `master-data/import/` which requires `admin` (`IsAdmin`). Verified directly against `backend/dashboard/views.py` `permission_classes` on 2026-07-28.

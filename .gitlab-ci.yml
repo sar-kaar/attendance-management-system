@@ -44,10 +44,21 @@ build-frontend:
   image: node:20
   variables:
     VITE_API_URL: "https://ams-backend.azurewebsites.net/api"
+    # Vite only bakes VITE_* vars into the build if they're present as real env
+    # vars at `npm run build` time. Pass the GitLab CI/CD project variables
+    # through explicitly rather than relying on implicit exposure - without
+    # this, SocialLogin.jsx's `configured` check is false and the entire
+    # Google/Facebook login block silently renders nothing in production.
+    VITE_GOOGLE_CLIENT_ID: "$VITE_GOOGLE_CLIENT_ID"
+    VITE_FACEBOOK_APP_ID: "$VITE_FACEBOOK_APP_ID"
   script:
     - cd frontend
     - npm ci
     - npm run build
+    - |
+      if [ -z "$VITE_GOOGLE_CLIENT_ID" ] && [ -z "$VITE_FACEBOOK_APP_ID" ]; then
+        echo "WARNING: VITE_GOOGLE_CLIENT_ID and VITE_FACEBOOK_APP_ID are both unset - the built site will have no social login buttons. Set them as GitLab CI/CD project variables if social login should be live."
+      fi
   artifacts:
     paths:
       - frontend/dist

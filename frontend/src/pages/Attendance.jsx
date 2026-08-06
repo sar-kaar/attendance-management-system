@@ -185,7 +185,7 @@ export default function Attendance() {
       )}
 
       {showBulkModal && (
-        <div className="modal-overlay" onClick={() => setShowBulkModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Mark Bulk Attendance</h2>
             <form onSubmit={handleBulkSubmit}>

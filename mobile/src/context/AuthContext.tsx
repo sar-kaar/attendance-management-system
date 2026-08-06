@@ -13,13 +13,12 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   isAuthenticated: boolean;
+  login: (username: string, password: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// Phase 15 scope: silent session check on boot only (decides which navigator
-// shell to render). Login/registration flows land in Phase 16.
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,6 +42,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
+  const login = async (username: string, password: string) => {
+    const res = await authAPI.login(username, password);
+    await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, res.data.access);
+    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, res.data.refresh);
+    const me = await authAPI.me();
+    setUser(me.data as AuthUser);
+    return me.data as AuthUser;
+  };
+
   const logout = async () => {
     await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
     await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
@@ -50,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, logout }}>
+    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

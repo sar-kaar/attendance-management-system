@@ -1,3 +1,4 @@
+STALE — do not treat as current. Canonical status is docs/memory.md (ADR-007). This file is a Day-2 fossil (says Face Recognition/CRUD/Dashboard are "Not Started" when actually shipped). See risk W-10.,,,,,,,,,,
 Task ID,Task Name,Sprint,Assigned To,Priority,Status,Story Points,Start Date,End Date,Dependencies,Notes
 T-001,Project Setup & Tools,Sprint 0,Prizma Subedi,High,Done,2,7/7/2026,7/8/2026,-,GitHub Trello Dev env
 T-002,Requirements Gathering,Sprint 0,Prizma Subedi,High,Done,3,7/8/2026,7/10/2026,T-001,User interviews brainstorming

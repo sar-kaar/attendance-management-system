@@ -12,5 +12,6 @@ urlpatterns = [
     path('faculty-performance/', views.faculty_performance, name='dashboard-faculty-performance'),
     path('chronic-latecomers/', views.chronic_latecomers, name='dashboard-chronic-latecomers'),
     path('incomplete-records/', views.incomplete_records, name='dashboard-incomplete-records'),
+    path('eca/', views.eca_tracking, name='dashboard-eca-tracking'),
     path('master-data/import/', views.master_data_import, name='dashboard-master-data-import'),
 ]

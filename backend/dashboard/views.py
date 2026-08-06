@@ -14,6 +14,7 @@ from .serializers import (
     AtRiskStudentSerializer,
     AttendanceStatsSerializer,
     ChronicLatecomerSerializer,
+    ECAParticipationSerializer,
     FacultyPerformanceSerializer,
     IncompleteRecordSerializer,
     ProgramSerializer,
@@ -330,6 +331,49 @@ def incomplete_records(request):
                 'missing_dates': missing_dates[:10],
             })
     return Response(IncompleteRecordSerializer(incomplete, many=True).data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
+def eca_tracking(request):
+    program = request.query_params.get('program')
+    section = request.query_params.get('section')
+    students = Student.objects.filter(is_active=True)
+    if request.user.role == 'faculty':
+        students = students.filter(enrollments__course__faculty=request.user).distinct()
+    if program:
+        students = students.filter(program=program)
+    if section:
+        students = students.filter(section=section)
+
+    results = []
+    for student in students:
+        eca_records = Attendance.objects.filter(
+            student=student, status='eca', eca_activity__isnull=False
+        ).select_related('eca_activity', 'course').order_by('-date')
+        if not eca_records.exists():
+            continue
+        activities = [
+            {
+                'activity_id': r.eca_activity_id,
+                'activity_name': r.eca_activity.name,
+                'category': r.eca_activity.category,
+                'date': str(r.date),
+                'course_code': r.course.code,
+            }
+            for r in eca_records
+        ]
+        results.append({
+            'student_id': student.id,
+            'student_name': f"{student.first_name} {student.last_name}",
+            'student_code': student.student_id,
+            'program': student.program,
+            'section': student.section,
+            'activity_count': len(activities),
+            'activities': activities,
+        })
+    results.sort(key=lambda x: x['activity_count'], reverse=True)
+    return Response(ECAParticipationSerializer(results, many=True).data)
 
 
 @api_view(['POST'])

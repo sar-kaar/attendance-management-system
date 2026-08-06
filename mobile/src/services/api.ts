@@ -47,8 +47,27 @@ api.interceptors.response.use(
   },
 );
 
+export interface RegisterPayload {
+  username: string;
+  email: string;
+  password: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+}
+
 export const authAPI = {
   me: () => api.get('/auth/me/'),
+  login: (username: string, password: string) =>
+    api.post<{ access: string; refresh: string }>('/auth/login/', { username, password }),
+  register: (payload: RegisterPayload) => api.post('/auth/register/', payload),
+};
+
+export const otpAPI = {
+  send: (email: string) =>
+    api.post('/auth/otp/send/', { email, purpose: 'email_verification' }),
+  verify: (email: string, code: string) =>
+    api.post('/auth/otp/verify/', { email, code, purpose: 'email_verification' }),
 };
 
 export default api;

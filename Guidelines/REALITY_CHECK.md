@@ -1,3 +1,9 @@
+> **⚠️ STALE — do not treat as current.** This is a Day-2 snapshot (no dashboard app,
+> no face-provider abstraction, PostgreSQL missing from the stack, etc.). Per ADR-007,
+> **[`docs/memory.md`](../docs/memory.md) is the canonical, up-to-date status doc.**
+> Kept here for historical reference only. See risk W-10 in the "AMS - User Story
+> Dependencies & Risks" Google Sheet.
+
 # REALITY_CHECK.md — Source of Truth
 
 ## Stack

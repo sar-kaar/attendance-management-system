@@ -146,7 +146,7 @@ export default function AttendanceCodes() {
       )}
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editCode ? "Edit Code" : "Add Code"}</h2>
             <form onSubmit={handleSubmit}>
