@@ -203,7 +203,7 @@ export default function Users() {
       )}
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editUser ? "Edit User" : "Add User"}</h2>
             <form onSubmit={handleSubmit}>
@@ -303,7 +303,7 @@ export default function Users() {
       )}
 
       {resetUser && (
-        <div className="modal-overlay" onClick={() => setResetUser(null)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Reset password for {resetUser.username}</h2>
             <form onSubmit={handleResetPasswordSubmit}>

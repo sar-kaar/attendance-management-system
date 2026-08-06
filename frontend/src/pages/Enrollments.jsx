@@ -154,7 +154,7 @@ export default function Enrollments() {
       )}
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Enroll Student</h2>
             {error && (

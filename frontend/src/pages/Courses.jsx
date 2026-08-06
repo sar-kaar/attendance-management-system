@@ -143,7 +143,7 @@ export default function Courses() {
       )}
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editCourse ? "Edit Course" : "Add Course"}</h2>
             <form onSubmit={handleSubmit}>

@@ -53,5 +53,8 @@ class Student(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['student_id']
+
     def __str__(self):
         return f"{self.student_id} - {self.first_name} {self.last_name}"
