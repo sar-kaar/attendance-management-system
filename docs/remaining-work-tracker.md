@@ -43,7 +43,7 @@ Moving items requires a `gh` token with the **`project`** write scope. As of 202
 
 | Item | Status | Notes |
 |---|---|---|
-| Push `develop` → GitLab | Open | `develop` is ahead of `gitlab/develop`; GitLab drives the Azure deploy. Coordinate before pushing (triggers prod deploy). |
+| Push `develop` → GitLab | Done | Synced 2026-08-06 — `gitlab/main` + `gitlab/develop` updated. `main` push triggered Azure deploy: pipeline #29 shipped the first batch to production; the mobile-readiness batch (2e30528/3f4f61d) was pushed the same day. GitLab push credentials configured (store helper, `~/.git-credentials`). |
 | Board hygiene | Open | Confirm #36/#38 "In Progress" accuracy; ensure Sprint 2 items are pulled correctly on 2026-08-09. |
 | Charter tech-stack fix | Open | `Project Charter (AMS).gdoc` lists Node/Express/MySQL; actual stack is Django/DRF/PostgreSQL. |
 
