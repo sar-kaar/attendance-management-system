@@ -14,6 +14,7 @@
 | GitHub Project board | https://github.com/users/sar-kaar/projects/5 ("Attendance Management System", 23 items) |
 | GitLab repo (CI/CD) | https://gitlab.com/rokayaabi123/attendance-management-system |
 | Trello | https://trello.com/b/ecB6ppQa/attendance-management-system |
+| Google Drive (MIT account, consolidated) | https://drive.google.com/drive/folders/1Ntq3s7vrMrwNzAYcUl_oxsbyLCW53Mfm |
 | Live backend | https://ams-backend.azurewebsites.net |
 | Layout | `backend/` (Django + DRF) and `frontend/` (React + Vite) as independent top-level projects |
 | Django apps | `accounts`, `students`, `courses`, `attendance`, `face`, `dashboard` |
@@ -89,6 +90,24 @@ Backend test suite runs in GitLab CI on every push to `main`/`develop` and on MR
 ---
 
 ## Pending work
+
+### Session update — 2026-08-06
+
+- **Mobile auth flow committed (`106c262`, `feat: add mobile auth flow (login, register, email OTP verification)`)**: completed + verified the in-progress mobile auth work. New `mobile/src/screens/auth/RegisterScreen.tsx` + `VerifyOtpScreen.tsx`; `LoginScreen.tsx`, `AuthContext.tsx`, `AuthNavigator.tsx`, `services/api.ts` extended. JWT tokens in SecureStore with auto-refresh interceptor; silent session restore on boot; role-based routing in `RootNavigator`. Typecheck + lint clean; contracts verified live against the running backend (register→login→me). Committed **only** the 6 mobile files — the concurrent uncommitted backend-model/`Meta.options` + migrations + frontend page changes in the tree were left untouched (another agent's work in progress).
+
+- **Drive consolidation + cleanup completed**: all deliverables now live in one Google Drive folder on the MIT account (URL in the overview table above), including the new **"AMS - Resource Labeling Register"** sheet (33 resource rows, 10 columns, cost total 157,740 NPR from `Cost Estimation (AMS).md`). Team policy: the folder holds only word/google-doc + Google Sheet deliverables — no
+  `.md`** (those live in GitHub/local). Converted `Cost Estimation (AMS).md` → native Google Doc
+  `Cost Estimation (AMS)`, then moved **all 75 `.md` files** in the folder to Drive Trash
+  (recoverable) and trashed the now-empty `docs/`, `Weekly Tasks/`, `frontend/`, `mobile/` folders.
+  Kept: `Problem statement (AMS).docx`, `Cost Estimation (AMS)` (Google Doc), 5 sheets (Master
+  Tracker, Risk & Dependencies, Resource Register, Project Tracker, SWOT), and `Guidelines/`
+  (`.xlsx`, `.pdf`, `.csv`).
+- **Google Sheets audit**: Master Tracker (34 tabs), Risk & Dependencies (6 tabs), and Resource
+  Register are the live trackers; SWOT Analysis and the early Project Tracker sheet (11 tabs) are
+  kept as deliverables. **Trashed**: "Attendance" (literal app test data), "Attendance Management
+  System" (early agile planning, superseded by Master Tracker), "AMS Project Prompt and Planning"
+  (AI-prompt scratch), and "Attendance Management System - Project Tracker.xlsx" (duplicate export
+  of the Project Tracker sheet).
 
 ### Session update — 2026-08-05
 

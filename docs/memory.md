@@ -2,7 +2,7 @@
 
 > **Purpose:** Persistent, living project status for both humans and AI coding agents. **Update this file after every major implementation.**
 > **Scope:** Current state only — historical narrative belongs in `HANDOFF.md` (session logs) or [decisions.md](decisions.md) (why a decision was made), not here.
-> **Last updated:** 2026-08-05 · **Version:** 1.7 (see [decisions.md](decisions.md) ADR-007 for why this file exists and supersedes older status docs)
+> **Last updated:** 2026-08-06 · **Version:** 1.9 (see [decisions.md](decisions.md) ADR-007 for why this file exists and supersedes older status docs)
 
 ## Table of Contents
 
@@ -38,6 +38,7 @@ Backend and frontend are **both substantially built and deployed** (Azure App Se
 - **Backend `ruff` added (2026-07-26)**: `backend/pyproject.toml` (config: line-length 100, `E`/`F`/`W`/`I` rules, `E501` ignored, `migrations/` excluded) + `backend/requirements-dev.txt` (dev-only, `ruff` pinned). Initial run found 71 issues; auto-fixed 67 safe ones (`I001` unsorted imports, `F401` unused imports, `W292` missing EOF newline). Manually cleaned 3 more dead-code `F841` unused-variable findings (`accounts/tests.py`, `attendance/tests.py` — unused test-fixture assignments, values only needed for their side effect) and renamed an `E741` ambiguous variable `l`→`line` in `backend/scripts/inventory_sources.py`. `ruff check .` now runs in both `.gitlab-ci.yml` and `.github/workflows/ci.yml` (pip cache keys updated to also hash `requirements-dev.txt`). Verified with `manage.py check`, `makemigrations --check --dry-run`, and the full test suite (75 tests, all passing).
 - **Admin User Management + role-aware Dashboard (2026-08-04)**: `frontend/src/pages/Users.jsx` (new) consumes the previously-frontend-orphaned `AdminUserViewSet` (`/api/auth/users/`) — list/filter by role, create, edit, delete, reset password (via a local modal, not `window.prompt`, per ADR-06). Wired to a new admin-only `/dashboard/users` route and a role-filtered `DashboardLayout` nav (`navItems[].roles`). `Dashboard.jsx` now relabels stat cards/title based on `user.role` ("My Students"/"My Courses"/"My Dashboard" for faculty) and surfaces the previously-unused Faculty Performance endpoint (#18) as a panel. Verified end-to-end in a real browser (admin + faculty test logins, create/delete flow, route-guard redirect). Addresses most of #48's concrete gaps except Master Data Bulk Import UI (#21), left as a follow-up.
 - **`AttendanceViewSet.report` filter dead-code resolved (2026-07-26)**: the 2 `F841` findings from the ruff pass (`course_id`, `student_id` local vars in `report()`) were initially suspected to be a real filtering bug, but tracing the call showed `report()` calls `self.get_queryset()`, which already reads and applies the same `course`/`student`/`date` query params (`backend/attendance/views.py` `get_queryset()`). So the two local vars were genuinely dead — redundant reads, not a bug. Removed them and added a one-line comment explaining why, plus two regression tests (`test_report_filters_by_course`, `test_report_filters_by_student` in `backend/attendance/tests.py`) that lock in the already-correct filtering behavior so it can't silently regress.
+- **Mobile auth flow (Phase 16, 2026-08-06, commit `106c262`)**: mobile/ now has working login, register, and email-OTP verification screens. JWT access/refresh tokens persist in `expo-secure-store`; a 401 response interceptor auto-refreshes the token; `AuthContext` restores the session silently on boot and `RootNavigator` renders the role-appropriate tab shell (student/faculty). API contracts verified live against the backend: `register` (student role), `login` (SimpleJWT pair), `me` (role field), `otp/send` + `otp/verify` (`email_verification` purpose). Typecheck (`tsc --noEmit`) and lint (`eslint .`) both clean. Note: OTP email delivery itself needs the Brevo SMTP creds (present in `backend/.env`); without them the register→verify flow still proceeds and surfaces a resend option, mirroring the web frontend.
 
 ## Pending Features
 
@@ -88,6 +89,29 @@ See [decisions.md](decisions.md) for full ADRs. Most recent: ADR-007 (this memor
 - `docs/security.md`, `docs/contributing.md` — closed the two gaps this file's own audit flagged.
 - `docs/tech-stack.md`, `docs/package-guidelines.md`, `docs/coding-standards.md`, `docs/api-standards.md`, `docs/database-standards.md`, `docs/testing-strategy.md`, `docs/security-standards.md`, `docs/cicd.md`, `docs/versioning.md`, `docs/release-process.md`, `docs/development-guide.md` — enterprise engineering-foundation pass (2026-07-26, second session): final tech stack with rationale, planned `packages/` boundaries (design only, not implemented), and standards for coding/API/DB/testing/security/CI-CD/versioning/release/workflow. Each cross-references rather than duplicates the operational docs above (e.g. `security-standards.md` is the rule set, `security.md` stays the status/gap report).
 - `.editorconfig`, `.prettierrc`, `.prettierignore`, `.gitattributes` (root)
+
+**2026-08-06 session — Drive consolidation + cleanup**:
+
+- Consolidated project docs + Google Sheets into a single Drive folder on the MIT account and
+  recorded the URL in the External Trackers section below. Added the "AMS - Resource Labeling
+  Register" sheet (resource/cost register, 33 rows, from `Cost Estimation (AMS).md`, total
+  157,740 NPR).
+- **Drive policy set by the team (2026-08-06): the folder holds only word/google-doc + Google Sheet
+  deliverables — no `.md` files** (they live in GitHub/local). Applied it fully: converted
+  `Cost Estimation (AMS).md` → native Google Doc `Cost Estimation (AMS)` in the folder, then moved
+  **all 75 remaining `.md` files to Drive Trash** (root README/AGENTS/HANDOFF/Cost Estimation +
+  all 33 in `docs/` + 10 in `Guidelines/` + 25 in `Weekly Tasks/` + `frontend/README.md` +
+  `mobile/AGENTS.md`/`README.md`) and trashed the now-empty `docs/`, `Weekly Tasks/`, `frontend/`,
+  `mobile/` folders. Everything is recoverable from Drive Trash and remains in git locally.
+  Kept in the folder: `Problem statement (AMS).docx`, `Cost Estimation (AMS)` (Google Doc),
+  5 sheets (Master Tracker, Risk & Dependencies, Resource Register, Project Tracker, SWOT), and
+  `Guidelines/` (`Sample of Last session_Project.xlsx`, `Course Syllabus CSE 405.pdf`,
+  `03_PROJECT_TRACKER.csv`).
+- Also trashed (team-confirmed 2026-08-06): "Attendance" (literal app test data), "Attendance
+  Management System" (early agile planning, superseded by the Master Tracker), "AMS Project Prompt
+  and Planning" (AI-prompt scratch), and "Attendance Management System - Project Tracker.xlsx"
+  (duplicate export of the Project Tracker Google Sheet). The early "Attendance Management System -
+  Project Tracker" **Google Sheet** (11 tabs) itself was kept as a historical deliverable.
 
 **Modified (2026-08-05 session — cross-system doc/sheet completeness pass)**:
 
@@ -158,6 +182,7 @@ Branch: `develop`. A stuck merge of `origin/develop` into `develop` (9 files, co
 
 Project status also lives in team-managed Google Sheets (not in this repo, so they can drift — this file remains the code-verified source of truth per ADR-007):
 
+- **Consolidated Google Drive folder (MIT account)** — https://drive.google.com/drive/folders/1Ntq3s7vrMrwNzAYcUl_oxsbyLCW53Mfm — **holds only word/google-doc + Google Sheet deliverables** (team policy, 2026-08-06): `Problem statement (AMS).docx`, `Cost Estimation (AMS)` (Google Doc), the 5 sheets listed below plus the Project Tracker + SWOT sheets, and the `Guidelines/` folder (a `.xlsx`, `.pdf`, `.csv`). **No `.md` files** — all trashed (recoverable), all still in GitHub/local. The "AMS - Resource Labeling Register" sheet (ID `1d7WVIOHCi5_23CWILuwHVb2DYG-Ys0jEKmcqj2y-x14`) is the resource/cost register generated from `Cost Estimation (AMS).md`.
 - **"Attendance Management System – Master Tracker"** (https://docs.google.com/spreadsheets/d/1Tr8JOwc4HTXpyPvXP2LaV0pTpCRSuePEjo4AURUln2Y) — 34 tabs: project overview, requirements, sprint board, feature backlog, GitHub issues/PRs snapshots, bug tracker, dependencies, risks, and the **"33. Agent Instructions"** onboarding tab. Most tabs were stale placeholders ("Planned" for things that were actually done) as of 2026-08-04; corrected 2026-08-05 for Project Overview, Progress Dashboard, Functional Requirements, Bug Tracker, Dependencies, GitHub Issues, AI Task Tracker, and Agent Instructions — the remaining tabs (Non-Functional Requirements, Sprint Board, Feature Backlog, Web/Mobile Development, UI Components, Design System, Testing, Security Checklist, Release Planning, Documentation Tracker, Changelog, API Inventory, Architecture Decisions, Database Schema, DevOps, Dependencies-chain-adjacent tabs) were **not** touched in that pass and may still be stale — verify before trusting.
 - **"AMS - User Story Dependencies & Risks"** (https://docs.google.com/spreadsheets/d/1BRHCixRfskt6hvGgwYHx0g14h1ZX58ru2uIgd7bozn8) — user-story dependency chains, technical risk register (R-01–R-33) on the "Risk Analysis" tab, user-story status matrix, a team/process risk register (P-01–P-10, W-01–W-12) on the "Personal & Work Risks" tab, and a combined action-item view on the **"Risk Mitigation Plan"** tab. Created 2026-07-27, the same day as GitHub issue #51 ("Risk Management") — that issue is the assignment prompt this sheet answers; **#51 is now closed** (was previously incorrectly noted here as still open). Most current and detailed risk source. **R-07 (report filter) is "Mitigated" as of 2026-08-05 on both the Risk Analysis and Risk Mitigation Plan tabs** — note it is a distinct risk from **W-08** (Azure Face verification), which is still genuinely open. **New row R-34 added 2026-08-05** on the Risk Mitigation Plan tab for the social-login-missing-in-production bug (see Known Bugs above) — code fixed, GitLab CI/CD variable creation still a pending manual step.
 - **"Attendance Management System - Project Tracker"** — an early (2026-07-07/08) sprint-planning template, stale and unmaintained since day 2 of the project; do not treat as current (same caveat as `Guidelines/03_PROJECT_TRACKER.csv`).

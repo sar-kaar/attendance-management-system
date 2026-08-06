@@ -55,9 +55,18 @@ in July 2026 because no one checked this.
   Personal & Work Risks, Risks, Risk Mitigation Plan):
   https://docs.google.com/spreadsheets/d/1BRHCixRfskt6hvGgwYHx0g14h1ZX58ru2uIgd7bozn8 — check the
   "Risk Mitigation Plan" tab's Status column before treating any R-/M-/P-/W- risk ID as still open.
+- **Consolidated Google Drive folder (MIT account)**:
+  https://drive.google.com/drive/folders/1Ntq3s7vrMrwNzAYcUl_oxsbyLCW53Mfm — **holds only
+  word/google-doc + Google Sheet deliverables** (team policy, 2026-08-06): `Problem statement (AMS).docx`,
+  `Cost Estimation (AMS)` (Google Doc), the 5 project sheets (Master Tracker, Risk & Dependencies,
+  Resource Labeling Register, Project Tracker, SWOT), and the `Guidelines/` folder (a `.xlsx`, `.pdf`,
+  `.csv`). **No `.md` files live here** — they were all moved to Drive Trash (recoverable) and exist
+  in GitHub/local only. The "AMS - Resource Labeling Register" sheet (ID `1d7WVIOHCi5_23CWILuwHVb2DYG-Ys0jEKmcqj2y-x14`)
+  is the resource/cost register generated from `Cost Estimation (AMS).md`.
 
-Both sheets are team-managed, not in git, and can drift from code reality — treat them the same way
-as `docs/memory.md`'s "External Trackers" section describes: useful, but verify against code.
+Both sheets (and the Drive folder) are team-managed, not in git, and can drift from code reality —
+treat them the same way as `docs/memory.md`'s "External Trackers" section describes: useful, but
+verify against code.
 
 ### Phase 5 — Inspect File Activity
 Check which files were recently modified. Identify ongoing work before making changes.
