@@ -3,8 +3,9 @@
 > Created: 2026-08-06 · Owner of this doc: Abhishek (backend)
 > Companion to [docs/memory.md](memory.md) (canonical status per ADR-007), [HANDOFF.md](../HANDOFF.md), and the
 > [GitHub Project board](https://github.com/users/sar-kaar/projects/5). Where those disagree, `memory.md` wins.
-> Mirror as a Google Sheet: <https://docs.google.com/spreadsheets/d/1cXRmDkhBEzE6pf1wPndSA4IIGpdKBvMED1yTXEA1bwU/edit>
-> (a *new* sheet — the existing external tracker sheet can't be edited via API; keep this repo doc canonical).
+> Mirror as a Google Sheet (updated 2026-08-06, B1–B7 done): <https://docs.google.com/spreadsheets/d/14bKMgBTzv93ApWQkfanJUSmAjeetDOt8p3Lwfb9jcb8/edit>
+> The sheet is a point-in-time snapshot (the Drive API can't edit an existing sheet's cells, so a refreshed
+> sheet is created on material change); this repo doc is canonical. Superseded snapshot: `…1bwU` (safe to delete).
 >
 > **Purpose:** single view of what is *not done*, who owns it, and how work moves through the board.
 > This exists because the GitHub board (Todo/In Progress/Done + Sprint field) and the external Google Sheet
