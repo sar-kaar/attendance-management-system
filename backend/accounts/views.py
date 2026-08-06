@@ -1,6 +1,8 @@
-from rest_framework import generics, permissions, viewsets
+from rest_framework import generics, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
@@ -25,6 +27,30 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = RegisterSerializer
+
+
+class LogoutView(APIView):
+    """Blacklist the caller's refresh token so it can no longer be used to mint
+    new access tokens. Mobile clients call this on sign-out. With rotation on,
+    the access token still expires on its own; this revokes the refresh token."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        token = request.data.get('refresh')
+        if not token:
+            return Response(
+                {'detail': 'refresh token is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            RefreshToken(token).blacklist()
+        except TokenError:
+            return Response(
+                {'detail': 'Token is invalid or already blacklisted.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(status=status.HTTP_205_RESET_CONTENT)
 
 
 class UserDetailView(generics.RetrieveUpdateAPIView):
