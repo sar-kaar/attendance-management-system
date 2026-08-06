@@ -13,6 +13,7 @@ urlpatterns = [
     path('api/attendance/', include('attendance.urls')),
     path('api/face/', include('face.urls')),
     path('api/dashboard/', include('dashboard.urls')),
+    path('api/devices/', include('notifications.urls')),
 ]
 
 if settings.DEBUG:

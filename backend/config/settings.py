@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'accounts',
     'students',
@@ -32,6 +33,7 @@ INSTALLED_APPS = [
     'attendance',
     'face',
     'dashboard',
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -145,6 +147,11 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'AUTH_HEADER_TYPES': ('Bearer',),
+    # Mobile clients hold long-lived refresh tokens, so rotate on every refresh
+    # and blacklist the old token. Requires the token_blacklist app (installed
+    # above) and its migrations. Logout also blacklists the presented token.
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
 
 # Email Configuration (Brevo SMTP)
@@ -166,6 +173,9 @@ GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
 GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET', default='')
 FACEBOOK_APP_ID = config('FACEBOOK_APP_ID', default='')
 FACEBOOK_APP_SECRET = config('FACEBOOK_APP_SECRET', default='')
+
+# Push-notification provider: 'console' (default, logs only) or 'expo' (Expo push API).
+PUSH_PROVIDER = config('PUSH_PROVIDER', default='console')
 
 # Face recognition provider: 'local' (dlib, default) or 'azure' (Azure AI Face API).
 FACE_PROVIDER = config('FACE_PROVIDER', default='local')

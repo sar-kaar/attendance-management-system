@@ -12,6 +12,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from courses.models import Course, Enrollment
+from notifications.services import send_to_user
 from students.models import Student
 
 from .models import Attendance, AttendanceCode, ECAActivity
@@ -37,6 +38,28 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve', 'my_attendance']:
             return [permissions.IsAuthenticated()]
         return [permissions.IsAuthenticated(), IsAdminOrFaculty()]
+
+    def perform_create(self, serializer):
+        record = serializer.save()
+        self._notify_if_absent(record)
+
+    def _notify_if_absent(self, record):
+        """B7: push the student when they're marked absent. Best-effort — a push
+        failure must never break attendance marking, so swallow everything."""
+        if record.status != Attendance.Status.ABSENT:
+            return
+        target = getattr(record.student, 'user', None)
+        if target is None:
+            return
+        try:
+            send_to_user(
+                target,
+                title='Marked absent',
+                body=f'You were marked absent in {record.course.name} on {record.date}.',
+                data={'type': 'attendance', 'course_id': record.course_id, 'date': str(record.date)},
+            )
+        except Exception:  # noqa: BLE001 - notifications are non-critical
+            pass
 
     def get_queryset(self):
         qs = super().get_queryset()

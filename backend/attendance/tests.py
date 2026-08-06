@@ -447,3 +447,50 @@ class ECAActivityTest(TestCase):
         response = self.client.get('/api/dashboard/eca/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
+
+
+class AbsenceNotificationTest(TestCase):
+    """B7: marking a student absent pushes to their linked user; other statuses don't."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.admin = User.objects.create_user(
+            username='admin2', password='testpass123', role='admin')
+        self.student_user = User.objects.create_user(
+            username='studentb', password='testpass123', role='student')
+        self.faculty = User.objects.create_user(
+            username='facultyb', password='testpass123', role='faculty')
+        self.student = Student.objects.create(
+            first_name='Jane', last_name='Roe', email='jane@test.com',
+            student_id='STU900', user=self.student_user)
+        self.course = Course.objects.create(
+            name='Networks', code='CSE500', faculty=self.faculty)
+        Enrollment.objects.create(student=self.student, course=self.course)
+        self.client.force_authenticate(user=self.admin)
+
+    def _mark(self, status_value):
+        return self.client.post('/api/attendance/', {
+            'student': self.student.id, 'course': self.course.id,
+            'date': str(date.today()), 'status': status_value})
+
+    def test_absent_triggers_push_to_linked_user(self):
+        from unittest.mock import patch
+        with patch('attendance.views.send_to_user') as mock_send:
+            resp = self._mark('absent')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        mock_send.assert_called_once()
+        self.assertEqual(mock_send.call_args.args[0], self.student_user)
+
+    def test_present_does_not_trigger_push(self):
+        from unittest.mock import patch
+        with patch('attendance.views.send_to_user') as mock_send:
+            self._mark('present')
+        mock_send.assert_not_called()
+
+    def test_push_failure_does_not_break_marking(self):
+        from unittest.mock import patch
+        with patch('attendance.views.send_to_user', side_effect=RuntimeError('boom')):
+            resp = self._mark('absent')
+        # Attendance still recorded despite the push blowing up.
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Attendance.objects.filter(student=self.student, status='absent').exists())
