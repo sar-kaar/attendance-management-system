@@ -2,7 +2,7 @@
 
 > **Purpose:** Persistent, living project status for both humans and AI coding agents. **Update this file after every major implementation.**
 > **Scope:** Current state only — historical narrative belongs in `HANDOFF.md` (session logs) or [decisions.md](decisions.md) (why a decision was made), not here.
-> **Last updated:** 2026-08-06 · **Version:** 1.9 (see [decisions.md](decisions.md) ADR-007 for why this file exists and supersedes older status docs)
+> **Last updated:** 2026-08-06 · **Version:** 2.0 (see [decisions.md](decisions.md) ADR-007 for why this file exists and supersedes older status docs)
 
 ## Table of Contents
 
@@ -26,6 +26,8 @@ Backend and frontend are **both substantially built and deployed** (Azure App Se
 ## Completed Features
 
 - Auth: register, JWT login/refresh, email OTP verification (Brevo SMTP), Google/Facebook social sign-in, admin user management.
+- **Mobile-readiness backend (2026-08-06, #36/#42)**: refresh-token rotation + blacklist + `POST /api/auth/logout/`; new `notifications` app — `Device` model, `POST /api/devices/register/`, `/unregister/`, `GET /api/devices/`, provider-gated push service (`PUSH_PROVIDER=console|expo`), and an absence-push hook in `AttendanceViewSet`. 111 tests passing. Remaining B8–B10 (API versioning, CORS review, mobile contract doc) tracked in [remaining-work-tracker.md](remaining-work-tracker.md).
+- **Default model ordering (2026-08-06)**: added `Meta.ordering` to `Student`/`Course`/`Enrollment`/`Attendance` (migrations `students/0007`, `courses/0004`, `attendance/0005`) to fix `UnorderedObjectListWarning` and make pagination deterministic.
 - Students, Courses, Enrollments: full CRUD, role-gated.
 - Attendance: manual + bulk marking (enrollment-enforced), attendance codes (self-check-in), report query + CSV/PDF export.
 - Face recognition: register/recognize/mark-attendance, pluggable `FACE_PROVIDER` (`local` dlib or `azure` Azure AI Face API).
@@ -45,7 +47,8 @@ Backend and frontend are **both substantially built and deployed** (Azure App Se
 | Feature | Owner | Tracking |
 |---|---|---|
 | Master Data Bulk Import UI (file upload + dry-run preview) | Ekata | GitHub #1 **closed 2026-08-05** (acceptance criteria satisfied by current `Dashboard.jsx`); remaining scope now tracked as **#48**, re-scoped down to just this one gap. Backend (`POST /api/dashboard/master-data/import/`) already done. |
-| ECA (extra-curricular activity) tracking | sar-kaar (backend model first) | GitHub #23 (US-12) — corrected 2026-08-05: assigned to `sar-kaar`, not Ekata as this doc previously said; blocked on a backend model that doesn't exist yet (risk R-20/US-D7) |
+| ECA (extra-curricular activity) tracking | Ekata (frontend) | GitHub #23 (US-12) — **backend done & migrated 2026-08-06** (`ECAActivity` model + `Attendance.eca_activity`, migrations 0004/0005); remaining is the frontend list/assign UI, assigned to Ekata. On board (In Progress). |
+| Notifications — mobile push | sar-kaar (backend done) / mobile client pending | GitHub #42 — **backend shipped 2026-08-06**: `notifications` app (Device model, register/unregister/list endpoints, provider-gated push service), absence-push hook. Mobile client remains. See [remaining-work-tracker.md](remaining-work-tracker.md). |
 | Notifications (email/SMS) | Unassigned | Phase 7, not started, see [phases.md](phases.md) |
 | SRS Document (IEEE 830) | Prizma | GitHub #5 (T-003) — **closed on GitHub since 2026-07-30** (board: Done), but no artifact existed until **drafted 2026-08-04**, see [srs.md](srs.md); needs Prizma/team review |
 | Requirements Gathering doc | Prizma | GitHub #7 (T-002) — **closed on GitHub since 2026-07-30** (board: Done), but no artifact existed until **drafted 2026-08-04**, see [requirements-gathering.md](requirements-gathering.md); needs Prizma/team review |
@@ -181,6 +184,8 @@ Branch: `develop`. A stuck merge of `origin/develop` into `develop` (9 files, co
 > agent sessions).
 
 Project status also lives in team-managed Google Sheets (not in this repo, so they can drift — this file remains the code-verified source of truth per ADR-007):
+
+- **In-repo remaining-work tracker**: [remaining-work-tracker.md](remaining-work-tracker.md) (canonical, version-controlled) with a Google Sheet mirror (updated 2026-08-06, B1–B7 done: https://docs.google.com/spreadsheets/d/14bKMgBTzv93ApWQkfanJUSmAjeetDOt8p3Lwfb9jcb8/edit; superseded snapshot `…1bwU`). **Note:** the sheet is a *point-in-time snapshot* — the Drive API in use can't edit an existing sheet's cells, so a fresh sheet is created on material change; the repo doc is authoritative.
 
 - **Consolidated Google Drive folder (MIT account)** — https://drive.google.com/drive/folders/1Ntq3s7vrMrwNzAYcUl_oxsbyLCW53Mfm — **holds only word/google-doc + Google Sheet deliverables** (team policy, 2026-08-06): `Problem statement (AMS).docx`, `Cost Estimation (AMS)` (Google Doc), the 5 sheets listed below plus the Project Tracker + SWOT sheets, and the `Guidelines/` folder (a `.xlsx`, `.pdf`, `.csv`). **No `.md` files** — all trashed (recoverable), all still in GitHub/local. The "AMS - Resource Labeling Register" sheet (ID `1d7WVIOHCi5_23CWILuwHVb2DYG-Ys0jEKmcqj2y-x14`) is the resource/cost register generated from `Cost Estimation (AMS).md`.
 - **"Attendance Management System – Master Tracker"** (https://docs.google.com/spreadsheets/d/1Tr8JOwc4HTXpyPvXP2LaV0pTpCRSuePEjo4AURUln2Y) — 34 tabs: project overview, requirements, sprint board, feature backlog, GitHub issues/PRs snapshots, bug tracker, dependencies, risks, and the **"33. Agent Instructions"** onboarding tab. Most tabs were stale placeholders ("Planned" for things that were actually done) as of 2026-08-04; corrected 2026-08-05 for Project Overview, Progress Dashboard, Functional Requirements, Bug Tracker, Dependencies, GitHub Issues, AI Task Tracker, and Agent Instructions — the remaining tabs (Non-Functional Requirements, Sprint Board, Feature Backlog, Web/Mobile Development, UI Components, Design System, Testing, Security Checklist, Release Planning, Documentation Tracker, Changelog, API Inventory, Architecture Decisions, Database Schema, DevOps, Dependencies-chain-adjacent tabs) were **not** touched in that pass and may still be stale — verify before trusting.
