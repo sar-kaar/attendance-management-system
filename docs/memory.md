@@ -152,21 +152,21 @@ See [decisions.md](decisions.md) for full ADRs. Most recent: ADR-007 (this memor
 
 ## Current Branch Status
 
-Branch: `develop`. A stuck merge of `origin/develop` into `develop` (9 files, conflict markers left from a prior session) was resolved 2026-08-05 — 88 backend tests pass. Pushed to both `origin/develop` and `gitlab/develop` (test-only pipeline, no deploy). `gitlab main` has **not** been pushed/merged — that triggers a real Azure production deploy and needs an explicit separate go-ahead.
+Branch: `develop` (active work) and `main` (deploy branch), both fully synced to `origin` (GitHub) and `gitlab` (GitLab) as of 2026-08-06. Pushing `main` to GitLab triggers the real Azure production deploy. GitLab CI **pipeline #29** (2026-08-06) deployed the first batch — mobile auth (`106c262`), ECA backend model (`d4f365d`), admin User Management — to production; the subsequent batch (mobile-readiness backend #36/#42, board-move tooling) was merged to `main` (`3f4f61d`) and pushed this same day. GitLab push credentials are now configured: `credential.https://gitlab.com.helper store` with the PAT in `~/.git-credentials` (mode 600) on Linux, same store-helper setup documented for Windows — GitHub auth (via `gh`) is untouched. Backend suite: **111 tests passing**. The one remaining production gap: `VITE_GOOGLE_CLIENT_ID`/`VITE_FACEBOOK_APP_ID` GitLab CI/CD variables still need creating (see Known Bugs, R-34) or the next frontend deploy ships without social login.
 
 ## Current Priorities
 
 1. Master Data Bulk Import UI (#48's remaining scope) — file upload + dry-run preview against `POST /api/dashboard/master-data/import/`.
-2. ECA Tracking backend model (#23) — blocks any frontend work on that story.
+2. ECA Tracking frontend UI (#23's remaining scope) — backend model shipped in `d4f365d`; only the list/assign UI remains.
 3. Project Charter tech-stack fix (#8) — blocked on Prizma directly, no API edit/comment access to her doc.
-4. Confirm #36/#38 (mobile) board status before Sprint 2 starts 2026-08-09 — flagged as likely stale (zero mobile code exists), not changed unilaterally.
+4. Confirm remaining mobile board cards (#35, #37–#41, #43, #44) before Sprint 2 starts 2026-08-09 — #36/#42 (mobile auth + push-notification backend) now have code (`106c262`, `2e30528`); the rest are still scaffold-only.
 
 ## Next Recommended Tasks
 
 1. Verify `FACE_PROVIDER=azure` end-to-end against a real Azure Face resource (see [decisions.md](decisions.md) ADR-002 consequences).
 2. Stand up a minimal Vitest smoke test for the frontend so a test step can be added to CI.
 3. Retire or refresh `Guidelines/03_PROJECT_TRACKER.csv`.
-4. Decide on and execute a `gitlab main` push — deliberately, since it deploys to production.
+4. Create the two missing `VITE_GOOGLE_CLIENT_ID`/`VITE_FACEBOOK_APP_ID` GitLab CI/CD variables (via `backend/scripts/push_gitlab_vars.py` or GitLab UI) — the code fix (`646bed4`) is merged, but production still ships without social login until these exist (R-34).
 
 ## Important Implementation Notes
 

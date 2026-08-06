@@ -1,6 +1,6 @@
 # HANDOFF — Attendance Management System
 
-> Last updated: 2026-08-05
+> Last updated: 2026-08-06
 > **Canonical status doc is [docs/memory.md](docs/memory.md) per ADR-007** — this file is a human-facing session handoff, kept in sync with it but memory.md wins on any disagreement.
 
 ---
@@ -31,9 +31,9 @@
 
 ---
 
-## Status: backend + frontend both substantially built and deployed; mobile is planned, not started
+## Status: backend + frontend deployed; mobile foundation + auth built (Sprint 2 in progress)
 
-Web app (backend + frontend) is feature-complete for the core scope (see [docs/prd.md](docs/prd.md#features--priorities)). Mobile app is fully planned (12-issue epic on the project board) but has zero code — Sprint 2 "Mobile Core" is scheduled to start **2026-08-09**.
+Web app (backend + frontend) is feature-complete for the core scope (see [docs/prd.md](docs/prd.md#features--priorities)). Mobile app now has a working foundation and auth — Expo scaffold (PR #52, merged 2026-07-28), mobile auth screens (`106c262`), and the mobile-readiness backend (#36/#42, `2e30528`) — with attendance marking still pending for Sprint 2 "Mobile Core" (starts **2026-08-09**).
 
 ### API endpoints (all working)
 
@@ -80,18 +80,22 @@ Web app (backend + frontend) is feature-complete for the core scope (see [docs/p
 
 - **Host**: Azure App Service `ams-backend` (resource group `ams-rg`), frontend static assets to storage account `amsfrontendweb`.
 - **CI/CD**: GitLab CI (`.gitlab-ci.yml`) — tests run on `main`, `develop`, and merge requests; frontend build + backend deploy run only on `main`. See `docs/deployment.md` for the full pipeline and, as of this session, a credential-inventory/continuity runbook.
-- **GitHub** (`origin`) is used for team visibility, issues, and PRs; **GitLab** (`gitlab`) drives the actual deploy pipeline. Both remotes are meant to be kept in sync manually — currently 7 commits out of sync (see Corrections above).
+- **GitHub** (`origin`) is used for team visibility, issues, and PRs; **GitLab** (`gitlab`) drives the actual deploy pipeline. Both remotes are synced as of 2026-08-06 (`main` + `develop` on both; `main` push deploys to production).
 - Mail/OTP secrets are synced from GitLab CI/CD masked variables into Azure App Service settings at deploy time — nothing secret is committed.
 
 ### Test status
 
-Backend test suite runs in GitLab CI on every push to `main`/`develop` and on MRs (`python manage.py test`). 75+ tests passing as of the 2026-07-26 ruff/hygiene pass — check the latest GitLab pipeline for the current count rather than trusting a cached number here.
+Backend test suite runs in GitLab CI on every push to `main`/`develop` and on MRs (`python manage.py test`). **111 tests passing** as of 2026-08-06 — check the latest GitLab pipeline for the current count rather than trusting a cached number here.
 
 ---
 
 ## Pending work
 
 ### Session update — 2026-08-06
+
+- **Merged `develop` → `main` and synced both remotes** (`7d22830`, `3f4f61d`). Committed the concurrent in-tree work (default model ordering + migrations, modal backdrop UX fixes, `run.sh` Linux launcher) as `f8f8313` and doc updates as `da3bee9`. Pushed `main` + `develop` to `origin` (GitHub) and `main` to `gitlab` — GitLab CI **pipeline #29** deployed the first batch to production; the mobile-readiness batch (#36/#42) landed via `2e30528` + merge `3f4f61d` and was pushed the same day. 111 backend tests, frontend lint/build, and mobile typecheck/lint all green before merge.
+- **GitLab push credentials configured**: `credential.https://gitlab.com.helper store` + PAT in `~/.git-credentials` (mode 600) on Linux; same store-helper commands documented for the Windows machine. GitHub auth via `gh` untouched. **Rotate the PAT if it ever leaks** (it was shared in chat).
+- **Google Sheets synced** (Master Tracker): `9. GitHub Issues` (#23 ECA → Done; #36/#42 → Done with code refs; #34/#35-46 updated), `34. Progress Dashboard` (Sprint 2 → 50%, auth done), `8. Sprint Board` (Sprint 2 50%), `21. Changelog` (added v0.2.0), `10. GitHub Pull Requests` (PR #52 + both develop→main merges). `docs/remaining-work-tracker.md` GitLab row → Done.
 
 - **Mobile auth flow committed (`106c262`, `feat: add mobile auth flow (login, register, email OTP verification)`)**: completed + verified the in-progress mobile auth work. New `mobile/src/screens/auth/RegisterScreen.tsx` + `VerifyOtpScreen.tsx`; `LoginScreen.tsx`, `AuthContext.tsx`, `AuthNavigator.tsx`, `services/api.ts` extended. JWT tokens in SecureStore with auto-refresh interceptor; silent session restore on boot; role-based routing in `RootNavigator`. Typecheck + lint clean; contracts verified live against the running backend (register→login→me). Committed **only** the 6 mobile files — the concurrent uncommitted backend-model/`Meta.options` + migrations + frontend page changes in the tree were left untouched (another agent's work in progress).
 
