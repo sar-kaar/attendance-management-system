@@ -46,9 +46,22 @@ gh project item-edit --id "$item_id" --project-id "$PROJECT_ID" \
     --field-id "$STATUS_FIELD_ID" --single-select-option-id "$opt"
 
 if [ "$want_sprint" = "--sprint" ]; then
-    # Current iteration id: first entry in the Sprint field's active iterations.
-    iter_id="$(gh project field-list "$PROJECT_NUMBER" --owner "$OWNER" --format json \
-        | python3 -c "import sys,json;d=json.load(sys.stdin);f=next(x for x in d['fields'] if x['id']=='$SPRINT_FIELD_ID');its=f.get('configuration',{}).get('iterations') or f.get('iterations') or [];print(its[0]['id'] if its else '')")"
+    # `gh project field-list` does NOT expand iterations, so query them via GraphQL.
+    # Pick the iteration covering today, else the next upcoming one.
+    iter_id="$(gh api graphql -f query='
+      query($owner:String!,$num:Int!){ user(login:$owner){ projectV2(number:$num){
+        field(name:"Sprint"){ ... on ProjectV2IterationField {
+          configuration { iterations { id startDate duration } } } } } } }' \
+        -f owner="$OWNER" -F num="$PROJECT_NUMBER" 2>/dev/null \
+      | python3 -c "
+import sys,json,datetime
+its=json.load(sys.stdin)['data']['user']['projectV2']['field']['configuration']['iterations']
+today=datetime.date.today()
+def end(it):
+    s=datetime.date.fromisoformat(it['startDate']); return s+datetime.timedelta(days=it['duration'])
+cur=[it for it in its if datetime.date.fromisoformat(it['startDate'])<=today<end(it)]
+upcoming=sorted([it for it in its if datetime.date.fromisoformat(it['startDate'])>today], key=lambda i:i['startDate'])
+print((cur[0]['id'] if cur else (upcoming[0]['id'] if upcoming else '')))")"
     if [ -n "$iter_id" ]; then
         echo ">> Issue #$issue -> Sprint (iteration $iter_id)"
         gh project item-edit --id "$item_id" --project-id "$PROJECT_ID" \
