@@ -3,12 +3,12 @@
 > Created: 2026-08-06 · Owner of this doc: Abhishek (backend)
 > Companion to [docs/memory.md](memory.md) (canonical status per ADR-007), [HANDOFF.md](../HANDOFF.md), and the
 > [GitHub Project board](https://github.com/users/sar-kaar/projects/5). Where those disagree, `memory.md` wins.
-> Mirror as a Google Sheet (updated 2026-08-06, B1–B7 done): <https://docs.google.com/spreadsheets/d/14bKMgBTzv93ApWQkfanJUSmAjeetDOt8p3Lwfb9jcb8/edit>
-> The sheet is a point-in-time snapshot (the Drive API can't edit an existing sheet's cells, so a refreshed
-> sheet is created on material change); this repo doc is canonical. Superseded snapshot: `…1bwU` (safe to delete).
+> Assignments live in the team **Master Tracker** Google Sheet, tab **"7. Feature Backlog"** (Assignee column),
+> kept in sync via Composio: <https://docs.google.com/spreadsheets/d/1Tr8JOwc4HTXpyPvXP2LaV0pTpCRSuePEjo4AURUln2Y>.
+> (No standalone mirror sheet — the two created 2026-08-06 were trashed; we edit the existing team sheets only.)
 >
 > **Purpose:** single view of what is *not done*, who owns it, and how work moves through the board.
-> This exists because the GitHub board (Todo/In Progress/Done + Sprint field) and the external Google Sheet
+> This exists because the GitHub board (Todo/In Progress/Done + Sprint field) and the external Google Sheets
 > can drift; this file is version-controlled and reviewed in PRs.
 
 ---
@@ -25,8 +25,8 @@ The board Status field has **Todo / In Progress / Done** (there is no separate "
 | Processing / doing | Status = **In Progress** |
 | Done | Status = **Done** (and close the issue) |
 
-Moving items requires a `gh` token with the **`project`** write scope. As of 2026-08-06 the local token has only
-`read:project`, so board moves are done via `scripts/board-move.sh` **after** running `gh auth refresh -s project`.
+Moving items requires a `gh` token with the **`project`** write scope (granted 2026-08-06 via
+`gh auth refresh -s project`). Board moves are scripted in `scripts/board-move.sh`.
 
 ---
 
@@ -54,8 +54,10 @@ driving to unblock **Sprint 2 "Mobile Core" (starts 2026-08-09)**.
 
 ### Mobile app (React Native) — Epic #34
 
-Sub-issues #35, #37–#41, #43, #44 are mobile **frontend** (owner TBD, Sprint 2). #36 and #42 have **backend**
-halves owned by Abhishek (see plan below). #45/#46 are build-pipeline/QA.
+Ownership (set 2026-08-06, reflected in GitHub assignees + Master Tracker):
+- Mobile **UI screens** #35, #37, #38, #39, #40, #41, #43, #44 and mobile **testing** #46 → **Ekata Rimal + Prizma Subedi** (`ekatarimal`, `Prizma515`)
+- **Backend halves** #36, #42 and **build/release pipeline** #45 → **Abhishek Rokaya** (`sar-kaar`)
+- Epic #34 → Ekata + Prizma
 
 ---
 
@@ -95,3 +97,7 @@ Google/Facebook OAuth, CORS middleware, DRF pagination.
 - **2026-08-06** — **B1–B7 shipped** (JWT rotation + blacklist + logout; `notifications` app with Device model,
   register/unregister/list endpoints, provider-gated push service; absence-push hook). Full suite 111 passing.
   Remaining backend: B8 (API versioning), B9 (CORS review), B10 (mobile contract doc).
+- **2026-08-07** — **Assignments recorded everywhere**: all 15 open GitHub issues assigned (mobile UI + testing →
+  Ekata + Prizma; backend/pipeline → Abhishek; #23/#48 → Ekata), which also populates the Project board Assignees
+  field; Master Tracker **"7. Feature Backlog"** Assignee column filled via Composio. The two standalone mirror
+  sheets created 2026-08-06 were trashed — we edit the existing team sheets only.
