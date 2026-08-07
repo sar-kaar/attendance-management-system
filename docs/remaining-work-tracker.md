@@ -106,3 +106,9 @@ Google/Facebook OAuth, CORS middleware, DRF pagination.
 - **2026-08-07** — **B8–B10 shipped**, completing **#36**: `/api/v1/` versioned namespace (non-breaking), CORS
   reviewed for Expo/mobile, and [mobile-api-contract.md](mobile-api-contract.md) written for the mobile team.
   113 tests passing. #36 moved to Done + closed.
+- **2026-08-07** — **#35 closed**: mobile `lint` + `typecheck` CI stage added to **both** `.github/workflows/ci.yml`
+  and `.gitlab-ci.yml` (the real pipeline; node:20, `npm ci`). Verified passing locally (0 lint errors, tsc clean).
+  ⚠️ **GitHub Actions is failing at the account level** — every run since before these changes dies in ~3s with
+  0 steps (startup failure; Actions is enabled, so this is an exhausted-minutes / spending-limit billing issue,
+  not a config problem). GitLab CI is the pipeline that actually gates/deploys; its mobile job runs on the next
+  GitLab push (a coordinated deploy step, not done here).
