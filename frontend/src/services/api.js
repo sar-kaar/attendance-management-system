@@ -1,4 +1,5 @@
 import axios from "axios";
+import { isNative } from "../utils/platform";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
@@ -35,7 +36,11 @@ api.interceptors.response.use(
         } catch {
           localStorage.removeItem("access_token");
           localStorage.removeItem("refresh_token");
-          window.location.href = "/login";
+          if (isNative()) {
+            window.location.hash = "#/login";
+          } else {
+            window.location.href = "/login";
+          }
         }
       }
     }

@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { isNative } from "./utils/platform";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import Login from "./pages/Login";
@@ -88,8 +89,9 @@ function AppRoutes() {
 }
 
 function App() {
+  const Router = isNative() ? HashRouter : BrowserRouter;
   return (
-    <BrowserRouter>
+    <Router>
       {/* Outside AuthProvider so notifications survive auth state changes
           (e.g. a toast raised while logging out). */}
       <NotificationProvider>
@@ -97,7 +99,7 @@ function App() {
           <AppRoutes />
         </AuthProvider>
       </NotificationProvider>
-    </BrowserRouter>
+    </Router>
   );
 }
 

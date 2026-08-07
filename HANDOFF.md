@@ -1,7 +1,11 @@
 # HANDOFF — Attendance Management System
 
+<<<<<<< HEAD
+> Last updated: 2026-08-07
+=======
 > Last updated: 2026-08-06
 > **Canonical status doc is [docs/memory.md](docs/memory.md) per ADR-007** — this file is a human-facing session handoff, kept in sync with it but memory.md wins on any disagreement.
+>>>>>>> 8e4e50ca0b48bcd4bf56e275fd60a1e0eb731cec
 
 ---
 
@@ -33,7 +37,44 @@
 
 ## Status: backend + frontend deployed; mobile foundation + auth built (Sprint 2 in progress)
 
+<<<<<<< HEAD
+### Mobile app (new, 2026-08-07) — usable Android app shipped via Capacitor
+
+- Wrapped the existing React + Vite SPA in **Capacitor 8** — native project at
+  `frontend/android/`, config at `frontend/capacitor.config.json`. Reuses 100% of
+  the web app (auth, dashboard, charts, face-recognition webcam all work in the
+  WebView); no UI port needed since the web app was already mobile-responsive.
+- Mobile build uses `.env.mobile` → `VITE_API_URL=https://ams-backend.azurewebsites.net/api`.
+- Native-aware changes to web code:
+  - `src/utils/platform.js` (`isNative()` via `Capacitor.isNativePlatform()`).
+  - `src/App.jsx` — switches to `HashRouter` when native (WebView can't do SPA
+    history paths); `BrowserRouter` on web unchanged.
+  - `src/services/api.js` — on refresh-token failure redirects via hash when native.
+  - `eslint.config.js` — ignores `android/`/`ios/` (generated native project).
+- Android manifest declares `CAMERA` permission (getUserMedia for face capture);
+  app name **AttendPro**, id `com.attendpro.ams`, custom launcher icons generated
+  for all densities.
+- **APK built and verified**: `frontend/android/app/build/outputs/apk/debug/app-debug.apk`
+  (4.4 MB debug build, Gradle 8.14.3 / compileSdk 36 / JDK 21). A copy is also at
+  `P:\AMS\AttendPro-debug.apk`.
+- Commands: `npm run cap:sync` (build web + sync), `npm run cap:apk` (assembleDebug),
+  `npm run cap:open` (Android Studio). On this machine the Android SDK lives at
+  `%LOCALAPPDATA%\Android\Sdk` (installed during this session; `local.properties`
+  already points at it and is gitignored).
+- Known limitations: WebView-based (not truly native controls); blob CSV/PDF
+  downloads rely on the WebView download manager; Google/Facebook OAuth buttons
+  need redirect URIs registered for the app scheme; offline support not built
+  (same as web). See updated `docs/tech-stack.md` "Mobile" section and
+  `frontend/README.md`.
+
+This is well ahead of the Week-by-week plan in `Guidelines/01_WEEKLY_ROADMAP.md` and
+`Guidelines/03_PROJECT_TRACKER.csv` — those documents are static plans written in
+advance and are now stale (as of 2026-07-20 they still show Sprint 1 "in progress"
+for basic register/login). **Treat this file and `Guidelines/REALITY_CHECK.md` as the
+source of truth for actual status, not the tracker CSV.**
+=======
 Web app (backend + frontend) is feature-complete for the core scope (see [docs/prd.md](docs/prd.md#features--priorities)). Mobile app now has a working foundation and auth — Expo scaffold (PR #52, merged 2026-07-28), mobile auth screens (`106c262`), and the mobile-readiness backend (#36/#42, `2e30528`) — with attendance marking still pending for Sprint 2 "Mobile Core" (starts **2026-08-09**).
+>>>>>>> 8e4e50ca0b48bcd4bf56e275fd60a1e0eb731cec
 
 ### API endpoints (all working)
 
