@@ -1,6 +1,11 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import RegexValidator
 from django.db import models
-from django.conf import settings
+
+phone_validator = RegexValidator(
+    regex=r'^\d{10}$',
+    message='Enter a valid 10-digit phone number.',
+)
 
 
 class User(AbstractUser):
@@ -10,7 +15,7 @@ class User(AbstractUser):
         STUDENT = 'student', 'Student'
 
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.STUDENT)
-    phone = models.CharField(max_length=15, blank=True)
+    phone = models.CharField(max_length=10, blank=True, validators=[phone_validator])
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
 
     def __str__(self):

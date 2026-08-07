@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { attendanceAPI, courseAPI, enrollmentAPI } from "../services/api";
 import { FaFilePdf, FaFileCsv } from "react-icons/fa";
 import { useNotify, formatApiError } from "../context/NotificationContext";
@@ -13,7 +13,7 @@ export default function Attendance() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkForm, setBulkForm] = useState({ course_id: "", date: "", records: [] });
 
-  const loadRecords = () => {
+  const loadRecords = useCallback(() => {
     setLoading(true);
     attendanceAPI
       .list({
@@ -23,7 +23,7 @@ export default function Attendance() {
       .then((res) => setRecords(res.data.results || res.data))
       .catch(console.error)
       .finally(() => setLoading(false));
-  };
+  }, [filters]);
 
   useEffect(() => {
     courseAPI.list().then((res) => setCourses(res.data.results || res.data));
@@ -32,7 +32,7 @@ export default function Attendance() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount/filter-change, standard data-loading pattern
     loadRecords();
-  }, [filters]);
+  }, [loadRecords]);
 
   const loadEnrolled = async (courseId) => {
     if (!courseId) {
@@ -185,7 +185,7 @@ export default function Attendance() {
       )}
 
       {showBulkModal && (
-        <div className="modal-overlay" onClick={() => setShowBulkModal(false)}>
+        <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Mark Bulk Attendance</h2>
             <form onSubmit={handleBulkSubmit}>

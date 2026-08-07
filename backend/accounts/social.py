@@ -27,44 +27,29 @@ class SocialAuthError(Exception):
     """Raised when a provider credential can't be validated."""
 
 
-def _unique_username(base):
-    """Derive a free username from an email local-part."""
-    cleaned = ''.join(c for c in base if c.isalnum() or c in '._-')[:140] or 'user'
-    candidate = cleaned
-    suffix = 1
-    while User.objects.filter(username=candidate).exists():
-        suffix += 1
-        candidate = f'{cleaned}{suffix}'
-    return candidate
-
-
 @transaction.atomic
-def get_or_create_social_user(email, first_name='', last_name=''):
-    """Find the account for a verified provider email, creating one if needed.
+def get_social_user(email, first_name='', last_name=''):
+    """Find the account for a verified provider email.
 
     Matching is by email because that is the only identifier both providers
-    agree on. New accounts get an unusable password: they can only ever be
-    accessed through the provider, so there is no weak default credential to
-    guess, and set_unusable_password keeps Django's auth checks coherent.
+    agree on. Social sign-in never creates an account: without this check,
+    anyone with a Gmail/Facebook account could sign in and be silently
+    provisioned a new account, regardless of whether they were ever meant
+    to have access. Accounts must be created by an administrator (or via
+    direct registration) first; social sign-in only links to one that
+    already exists.
     """
     email = (email or '').strip().lower()
     if not email:
         raise SocialAuthError('The provider did not return an email address.')
 
     user = User.objects.filter(email__iexact=email).first()
-    if user:
-        return user, False
-
-    user = User.objects.create(
-        username=_unique_username(email.split('@')[0]),
-        email=email,
-        first_name=first_name or '',
-        last_name=last_name or '',
-        role=User.Role.STUDENT,
-    )
-    user.set_unusable_password()
-    user.save(update_fields=['password'])
-    return user, True
+    if not user:
+        raise SocialAuthError(
+            'No account exists for this email address. Contact your '
+            'administrator to have an account created before signing in.'
+        )
+    return user
 
 
 def verify_google_token(id_token_str):

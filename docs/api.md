@@ -82,6 +82,7 @@ Mounted directly under `/api/` (not `/api/courses/`) — see `config/urls.py`.
 | GET | `attendance/export/csv/` | Admin, Faculty | CSV export of a report |
 | GET | `attendance/export/pdf/` | Admin, Faculty | PDF export (reportlab) |
 | GET/POST/PUT/DELETE | `attendance/codes/` | Admin, Faculty | `AttendanceCodeViewSet` — generate/manage self-check-in codes |
+| GET/POST/PUT/DELETE | `attendance/eca-activities/` | Admin, Faculty (write); Authenticated (read) | `ECAActivityViewSet` — extra-curricular activities a student can be marked `eca` against; `?category=`/`?start_date=`/`?end_date=` filters. An `Attendance` record can only set `eca_activity` when its own `status` is `eca` (enforced in `AttendanceSerializer.validate`). |
 
 ## Face Recognition — `/api/face/`
 
@@ -100,18 +101,19 @@ All read-only aggregation endpoints; each returns computed data over Student/Cou
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `dashboard/programs/` | Authenticated | Distinct program list |
-| GET | `dashboard/sections/` | Authenticated | Distinct section list |
-| GET | `dashboard/students/` | Authenticated | Student search |
-| GET | `dashboard/students/:id/attendance/` | Authenticated | Per-student attendance breakdown |
-| GET | `dashboard/attendance-stats/` | Authenticated | Aggregate attendance stats |
-| GET | `dashboard/at-risk/` | Admin, Faculty | Students below an attendance threshold |
-| GET | `dashboard/faculty-performance/` | Admin | Faculty-level attendance/marking stats |
-| GET | `dashboard/chronic-latecomers/` | Admin, Faculty | Students frequently marked `late` |
-| GET | `dashboard/incomplete-records/` | Admin, Faculty | Sessions with missing/incomplete attendance |
+| GET | `dashboard/programs/` | Admin, Faculty | Distinct program list |
+| GET | `dashboard/sections/` | Admin, Faculty | Distinct section list |
+| GET | `dashboard/students/` | Admin, Faculty | Student search (faculty scoped to their own courses' students) |
+| GET | `dashboard/students/:id/attendance/` | Admin, Faculty | Per-student attendance breakdown (faculty scoped to their own courses) |
+| GET | `dashboard/attendance-stats/` | Admin, Faculty | Aggregate attendance stats (faculty scoped to their own courses) |
+| GET | `dashboard/at-risk/` | Admin, Faculty | Students below an attendance threshold (faculty scoped to their own courses) |
+| GET | `dashboard/faculty-performance/` | Admin, Faculty | Faculty-level attendance/marking stats (faculty scoped to themselves only) |
+| GET | `dashboard/chronic-latecomers/` | Admin, Faculty | Students frequently marked `late` (faculty scoped to their own courses) |
+| GET | `dashboard/incomplete-records/` | Admin, Faculty | Sessions with missing/incomplete attendance (faculty scoped to their own courses) |
+| GET | `dashboard/eca/` | Admin, Faculty | Per-student ECA (extra-curricular activity) participation summary, `?program=`/`?section=` filters (faculty scoped to their own courses' students) |
 | POST | `dashboard/master-data/import/` | Admin | Bulk import students/courses |
 
-Exact permission classes per view are enforced in `backend/dashboard/views.py` — the table above reflects intent from `HANDOFF.md`; verify against the view's `permission_classes` before building a client that depends on a specific role gate.
+None of these endpoints are reachable by the `student` role — all `dashboard/*` views require `admin` or `faculty` (`IsAdminOrFaculty`), except `master-data/import/` which requires `admin` (`IsAdmin`). Verified directly against `backend/dashboard/views.py` `permission_classes` on 2026-07-28.
 
 ## Error Format
 

@@ -38,15 +38,16 @@
 .camera-view {
   display: block;
   width: 100%;
-  /* Two caps: the viewport-relative one keeps the controls below it on screen,
-     the pixel one stops the feed ballooning on very tall monitors. */
-  max-height: min(52vh, 420px);
+  /* Square feed caps on width, not height, so aspect-ratio alone keeps it a
+     true square instead of getting stretched wide by the max-height rule. */
+  max-width: min(70vh, 560px);
+  margin: 0 auto;
   /* cover, not contain: fills the frame with no letterboxing, and a centred
      face is what survives the crop. */
   object-fit: cover;
   border-radius: 10px;
   background: #111827;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
 }
 
 .camera-actions {
@@ -79,7 +80,7 @@
   }
 
   .camera-view {
-    max-height: min(40vh, 320px);
+    max-width: min(55vh, 440px);
   }
 
   .mode-switch {
@@ -89,6 +90,6 @@
 
 @media (max-height: 780px) {
   .camera-view {
-    max-height: min(44vh, 330px);
+    max-width: min(58vh, 450px);
   }
 }

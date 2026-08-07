@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import User, OTP
+
+from .models import OTP, User
 
 
 class RegisterSerializer(serializers.ModelSerializer):

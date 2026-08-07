@@ -25,6 +25,13 @@ build/
 *.swp
 *.swo
 
+# AI tool configs
+.codebones/
+.opencode/
+.claude/opencode-bridge-logs/
+.claude/scripts/
+.claude/scheduled_tasks.lock
+
 # Local scratch runners - these hardcode one machine's absolute paths
 *.bat
 
@@ -62,9 +69,6 @@ client_secret_*.json
 # Serena project index / memories (machine-local)
 .serena/
 .devswarm-temp/
-
-# Local agent tooling config (has its own lockfile/node_modules)
-.opencode/
 
 # Credentials template - meant to hold real values later, never commit
 EMAIL_OTP_SERVICES.md

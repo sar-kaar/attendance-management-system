@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { attendanceAPI, dashboardAPI } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import { FaUsers, FaBook, FaCheckCircle, FaUserTie } from "react-icons/fa";
 import { Bar, Doughnut } from "react-chartjs-2";
 import {
@@ -17,9 +18,12 @@ import "../styles/dashboard.css";
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const isFaculty = user?.role === "faculty";
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [atRisk, setAtRisk] = useState([]);
+  const [performance, setPerformance] = useState([]);
 
   useEffect(() => {
     attendanceAPI
@@ -32,14 +36,29 @@ export default function Dashboard() {
       .atRisk()
       .then((res) => setAtRisk(res.data))
       .catch(console.error);
+
+    dashboardAPI
+      .facultyPerformance()
+      .then((res) => setPerformance(res.data))
+      .catch(console.error);
   }, []);
 
   if (loading) return <div className="loading">Loading dashboard...</div>;
   if (!data) return <div className="loading">Failed to load dashboard</div>;
 
   const statCards = [
-    { label: "Total Students", value: data.total_students, icon: <FaUsers />, color: "#4a90d9" },
-    { label: "Active Courses", value: data.total_courses, icon: <FaBook />, color: "#22c55e" },
+    {
+      label: isFaculty ? "My Students" : "Total Students",
+      value: data.total_students,
+      icon: <FaUsers />,
+      color: "#4a90d9",
+    },
+    {
+      label: isFaculty ? "My Courses" : "Active Courses",
+      value: data.total_courses,
+      icon: <FaBook />,
+      color: "#22c55e",
+    },
     {
       label: "Attendance Today",
       value: `${data.today.percentage}%`,
@@ -98,7 +117,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
-      <h1>Dashboard</h1>
+      <h1>{isFaculty ? "My Dashboard" : "Dashboard"}</h1>
 
       <div className="stats-grid">
         {statCards.map((card) => (
@@ -200,6 +219,49 @@ export default function Dashboard() {
                 </td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="panel recent-panel">
+        <h3>{isFaculty ? "My Performance" : "Faculty Performance"}</h3>
+        <table className="recent-table">
+          <thead>
+            <tr>
+              <th>Faculty</th>
+              <th>Courses</th>
+              <th>Students</th>
+              <th>Overall Attendance</th>
+              <th>Weakest Course</th>
+            </tr>
+          </thead>
+          <tbody>
+            {performance.map((p) => (
+              <tr key={p.user_id}>
+                <td>{p.faculty_name}</td>
+                <td>{p.subjects_count}</td>
+                <td>{p.students_managed}</td>
+                <td>
+                  <span
+                    className="badge"
+                    style={{
+                      background: (p.overall_percentage >= 75 ? "#22c55e" : "#f59e0b") + "22",
+                      color: p.overall_percentage >= 75 ? "#22c55e" : "#f59e0b",
+                    }}
+                  >
+                    {p.overall_percentage}%
+                  </span>
+                </td>
+                <td>{p.worst_subject || "-"}</td>
+              </tr>
+            ))}
+            {performance.length === 0 && (
+              <tr>
+                <td colSpan={5} style={{ textAlign: "center", padding: 24 }}>
+                  No faculty performance data yet
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

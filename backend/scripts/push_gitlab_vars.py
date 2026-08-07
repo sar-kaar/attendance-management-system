@@ -53,6 +53,10 @@ ORDER = [
     'BREVO_API_KEY',
     'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET',
     'FACEBOOK_APP_ID', 'FACEBOOK_APP_SECRET',
+    # Same public IDs as above, duplicated under the VITE_ prefix so Vite bakes
+    # them into the frontend build (see .gitlab-ci.yml build-frontend job).
+    # Without these, SocialLogin.jsx renders nothing in production.
+    'VITE_GOOGLE_CLIENT_ID', 'VITE_FACEBOOK_APP_ID',
 ]
 
 
@@ -109,6 +113,15 @@ def collect():
         values['FACEBOOK_APP_SECRET'] = app_secret.group(0)
     else:
         missing.append('FACEBOOK_APP_SECRET')
+
+    if 'GOOGLE_CLIENT_ID' in values:
+        values['VITE_GOOGLE_CLIENT_ID'] = values['GOOGLE_CLIENT_ID']
+    else:
+        missing.append('VITE_GOOGLE_CLIENT_ID')
+    if 'FACEBOOK_APP_ID' in values:
+        values['VITE_FACEBOOK_APP_ID'] = values['FACEBOOK_APP_ID']
+    else:
+        missing.append('VITE_FACEBOOK_APP_ID')
 
     return values, missing
 

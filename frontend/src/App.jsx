@@ -15,6 +15,7 @@ import StudentDashboard from "./pages/StudentDashboard";
 import Enrollments from "./pages/Enrollments";
 import AttendanceCodes from "./pages/AttendanceCodes";
 import Reports from "./pages/Reports";
+import Users from "./pages/Users";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -61,6 +62,14 @@ function AppRoutes() {
         <Route path="enrollments" element={<Enrollments />} />
         <Route path="attendance-codes" element={<AttendanceCodes />} />
         <Route path="reports" element={<Reports />} />
+        <Route
+          path="users"
+          element={
+            <RoleRoute allowed={["admin"]}>
+              <Users />
+            </RoleRoute>
+          }
+        />
       </Route>
 
       <Route

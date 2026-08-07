@@ -1,16 +1,25 @@
-from rest_framework import generics, permissions, viewsets
+from rest_framework import generics, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import (
-    RegisterSerializer, UserSerializer, AdminUserSerializer,
-    OTPSendSerializer, OTPVerifySerializer, SocialTokenSerializer,
-)
+
 from .models import User
+from .serializers import (
+    AdminUserSerializer,
+    OTPSendSerializer,
+    OTPVerifySerializer,
+    RegisterSerializer,
+    SocialTokenSerializer,
+    UserSerializer,
+)
 from .services import OTPService
 from .social import (
-    SocialAuthError, get_or_create_social_user,
-    verify_google_token, verify_facebook_token,
+    SocialAuthError,
+    get_social_user,
+    verify_facebook_token,
+    verify_google_token,
 )
 
 
@@ -18,6 +27,30 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = RegisterSerializer
+
+
+class LogoutView(APIView):
+    """Blacklist the caller's refresh token so it can no longer be used to mint
+    new access tokens. Mobile clients call this on sign-out. With rotation on,
+    the access token still expires on its own; this revokes the refresh token."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        token = request.data.get('refresh')
+        if not token:
+            return Response(
+                {'detail': 'refresh token is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            RefreshToken(token).blacklist()
+        except TokenError:
+            return Response(
+                {'detail': 'Token is invalid or already blacklisted.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(status=status.HTTP_205_RESET_CONTENT)
 
 
 class UserDetailView(generics.RetrieveUpdateAPIView):
@@ -120,7 +153,7 @@ class _SocialLoginView(generics.GenericAPIView):
 
         try:
             profile = self.verify(serializer.validated_data['token'])
-            user, created = get_or_create_social_user(
+            user = get_social_user(
                 profile['email'], profile['first_name'], profile['last_name'],
             )
         except SocialAuthError as e:
@@ -134,7 +167,6 @@ class _SocialLoginView(generics.GenericAPIView):
             'access': str(refresh.access_token),
             'refresh': str(refresh),
             'user': UserSerializer(user).data,
-            'created': created,
         })
 
 

@@ -105,10 +105,6 @@ function Login() {
         </form>
 
         <SocialLogin onSuccess={handleSocialSuccess} onError={setError} />
-
-        <div className="register">
-          Don't have an account?<a href="/register"> Register</a>
-        </div>
       </div>
     </div>
   );

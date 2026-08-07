@@ -1,13 +1,25 @@
 import json
 import logging
+
+from django.utils import timezone
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from django.utils import timezone
-from students.models import Student
-from courses.models import Enrollment
+
 from attendance.models import Attendance
-from .providers import provider_name, FaceProcessingError
+from courses.models import Enrollment
+from students.models import Student
+
+from .providers import (
+    ENROLL_NUM_JITTERS,
+    MAX_ENCODINGS_PER_STUDENT,
+    RECOGNIZE_NUM_JITTERS,
+    FaceProcessingError,
+    FaceValidationError,
+    extract_quality_checked_encoding,
+    load_local_encodings,
+    provider_name,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,17 +38,7 @@ def _azure_client():
     return AzureFaceClient()
 
 
-def _persist_face(student, image_file):
-    """Register a face image for *student*. Returns provider-specific metadata dict
-    stored in student.face_encoding."""
-    image_bytes = image_file.read()
-
-    if provider_name() == 'azure':
-        client = _azure_client()
-        person_id = client.register(student, image_bytes)
-        return {'azure_person_id': person_id}
-
-    # local (dlib)
+def _load_local_image(image_bytes, photo_label=''):
     import io
     try:
         import face_recognition
@@ -45,16 +47,43 @@ def _persist_face(student, image_file):
             'Face recognition is not available on the server right now.'
         )
     try:
-        image = face_recognition.load_image_file(io.BytesIO(image_bytes))
+        return face_recognition.load_image_file(io.BytesIO(image_bytes))
     except Exception:
         logger.exception('Failed to decode uploaded image')
-        raise FaceProcessingError(
-            'Could not read the uploaded image. Please upload a valid JPEG/PNG photo.'
+        raise FaceValidationError(
+            f'{photo_label}Could not read the uploaded image. Please upload a '
+            'valid JPEG/PNG photo.'
         )
-    encodings = face_recognition.face_encodings(image)
-    if not encodings:
+
+
+def _persist_face(student, image_files):
+    """Register one or more face images for *student*, merging with any
+    encodings already stored (capped at MAX_ENCODINGS_PER_STUDENT) instead of
+    requiring a single perfect enrollment photo. Returns the provider-specific
+    metadata dict stored in student.face_encoding, or None if no image had a
+    usable face."""
+    if provider_name() == 'azure':
+        person_id = None
+        client = _azure_client()
+        for image_file in image_files:
+            person_id = client.register(student, image_file.read())
+        return {'azure_person_id': person_id} if person_id else None
+
+    # local (dlib)
+    multi = len(image_files) > 1
+    new_encodings = []
+    for idx, image_file in enumerate(image_files, start=1):
+        label = f'Photo {idx}: ' if multi else ''
+        image = _load_local_image(image_file.read(), label)
+        encoding = extract_quality_checked_encoding(image, ENROLL_NUM_JITTERS, label)
+        new_encodings.append(encoding.tolist())
+
+    if not new_encodings:
         return None
-    return encodings[0].tolist()
+
+    existing = load_local_encodings(student.face_encoding)
+    merged = (existing + new_encodings)[-MAX_ENCODINGS_PER_STUDENT:]
+    return {'encodings': merged}
 
 
 def _extract_probe(image_file):
@@ -78,34 +107,23 @@ def _extract_probe(image_file):
         return face_id, None
 
     # local (dlib)
-    import io
     try:
-        import face_recognition
-    except ImportError:
-        raise FaceProcessingError(
-            'Face recognition is not available on the server right now.'
-        )
-    try:
-        image = face_recognition.load_image_file(io.BytesIO(image_bytes))
-    except Exception:
-        logger.exception('Failed to decode uploaded image')
-        raise FaceProcessingError(
-            'Could not read the uploaded image. Please upload a valid JPEG/PNG photo.'
-        )
-    encodings = face_recognition.face_encodings(image)
-    if not encodings:
-        return None, (
-            {'error': 'No face detected in the image. Please upload a clear photo with a visible face.'},
-            status.HTTP_400_BAD_REQUEST,
-        )
-    return encodings[0], None
+        image = _load_local_image(image_bytes)
+        encoding = extract_quality_checked_encoding(image, RECOGNIZE_NUM_JITTERS)
+    except FaceValidationError as e:
+        return None, ({'error': str(e)}, status.HTTP_400_BAD_REQUEST)
+    return encoding, None
 
 
 def _find_best_match(probe, students, tolerance=0.6):
     """Match *probe* against *students* and return (student, confidence) or (None, 0).
 
     For Azure, the confidence is Azure's own 0–1 score.
-    For local, confidence = 1 - face_distance (so higher is better, matching Azure convention).
+    For local, confidence = 1 - face_distance (so higher is better, matching
+    Azure convention). A student may have several stored encodings (one per
+    enrolled photo); we compare against all of them and keep the closest, so
+    a match only needs to resemble the best of several references, not a
+    single one.
     """
     if provider_name() == 'azure':
         client = _azure_client()
@@ -122,22 +140,19 @@ def _find_best_match(probe, students, tolerance=0.6):
         return None, 0.0
 
     # local (dlib)
-    import numpy as np
     import face_recognition
+    import numpy as np
 
     best_match = None
     best_distance = float('inf')
     probe_array = np.array(probe)
 
     for student in students:
-        encoding_str = student.face_encoding
-        if not encoding_str:
+        knowns = load_local_encodings(student.face_encoding)
+        if not knowns:
             continue
-        try:
-            known = np.array(json.loads(encoding_str))
-        except (ValueError, TypeError):
-            continue
-        distance = face_recognition.face_distance([known], probe_array)[0]
+        distances = face_recognition.face_distance(np.array(knowns), probe_array)
+        distance = float(np.min(distances))
         if distance < best_distance:
             best_distance = distance
             best_match = student
@@ -155,9 +170,9 @@ def _find_best_match(probe, students, tolerance=0.6):
 @permission_classes([permissions.IsAuthenticated, IsAdminOrFaculty])
 def register_face(request):
     student_id = request.data.get('student_id')
-    image = request.FILES.get('image')
+    images = request.FILES.getlist('images') or request.FILES.getlist('image')
 
-    if not student_id or not image:
+    if not student_id or not images:
         return Response(
             {'error': 'student_id and image are required'},
             status=status.HTTP_400_BAD_REQUEST,
@@ -171,8 +186,18 @@ def register_face(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
+    existing_count = len(load_local_encodings(student.face_encoding))
+    if provider_name() != 'azure' and existing_count >= MAX_ENCODINGS_PER_STUDENT:
+        return Response(
+            {'error': f'{student.first_name} {student.last_name} already has the maximum '
+                      f'of {MAX_ENCODINGS_PER_STUDENT} reference photos registered.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     try:
-        result = _persist_face(student, image)
+        result = _persist_face(student, images)
+    except FaceValidationError as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except FaceProcessingError as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -182,12 +207,18 @@ def register_face(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    student.face_encoding = json.dumps(result) if not isinstance(result, str) else json.dumps(result)
+    student.face_encoding = json.dumps(result)
     student.save(update_fields=['face_encoding'])
 
+    photo_count = len(result.get('encodings', [])) if isinstance(result, dict) else 1
+    message = f'Face registered for {student.first_name} {student.last_name}'
+    if provider_name() != 'azure':
+        message += f' ({photo_count}/{MAX_ENCODINGS_PER_STUDENT} reference photos)'
+
     return Response({
-        'message': f'Face registered for {student.first_name} {student.last_name}',
+        'message': message,
         'student_id': student.student_id,
+        'photo_count': photo_count,
     })
 
 

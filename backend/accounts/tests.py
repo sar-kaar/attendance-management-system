@@ -1,12 +1,14 @@
 from unittest.mock import patch
-from django.test import TestCase, override_settings
-from django.core.cache import cache
-from rest_framework.test import APIClient
-from rest_framework import status
+
 from django.core import mail
-from .models import User, OTP
+from django.core.cache import cache
+from django.test import TestCase, override_settings
+from rest_framework import status
+from rest_framework.test import APIClient
+
+from .models import User
 from .services import OTPService
-from .social import SocialAuthError, verify_google_token, verify_facebook_token
+from .social import SocialAuthError, verify_facebook_token, verify_google_token
 
 
 class RegistrationTest(TestCase):
@@ -195,7 +197,7 @@ class OTPTest(TestCase):
         self.assertTrue(otp.is_used)
 
     def test_otp_service_verify_wrong_code(self):
-        otp = OTPService.create_otp('test@example.com', 'email_verification')
+        OTPService.create_otp('test@example.com', 'email_verification')
         success, message = OTPService.verify_otp('test@example.com', '000000', 'email_verification')
         self.assertFalse(success)
         self.assertIn('Invalid code', message)
@@ -225,27 +227,23 @@ class SocialLoginTest(TestCase):
                       'first_name': 'New', 'last_name': 'User'}
 
     @patch('accounts.views.verify_google_token')
-    def test_google_login_creates_user_and_returns_jwt(self, mock_verify):
+    def test_google_login_rejects_unknown_email(self, mock_verify):
         mock_verify.return_value = self.GOOGLE_PROFILE
         resp = self.client.post(self.google_url, {'token': 'valid-google-token'})
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertIn('access', resp.data)
-        self.assertIn('refresh', resp.data)
-        self.assertTrue(resp.data['created'])
-        user = User.objects.get(email='newuser@mitnepal.edu.np')
-        self.assertEqual(user.role, 'student')
-        # Provider-only accounts must not be reachable by password.
-        self.assertFalse(user.has_usable_password())
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('error', resp.data)
+        self.assertEqual(User.objects.count(), 0)
 
     @patch('accounts.views.verify_google_token')
-    def test_google_login_reuses_existing_account_by_email(self, mock_verify):
+    def test_google_login_signs_in_existing_account_by_email(self, mock_verify):
         existing = User.objects.create_user(
             username='existing', email='newuser@mitnepal.edu.np',
             password='test1234', role='faculty')
         mock_verify.return_value = self.GOOGLE_PROFILE
         resp = self.client.post(self.google_url, {'token': 'valid-google-token'})
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertFalse(resp.data['created'])
+        self.assertIn('access', resp.data)
+        self.assertIn('refresh', resp.data)
         self.assertEqual(User.objects.filter(email='newuser@mitnepal.edu.np').count(), 1)
         # An existing role must survive a social sign-in.
         existing.refresh_from_db()
@@ -264,12 +262,21 @@ class SocialLoginTest(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
     @patch('accounts.views.verify_facebook_token')
-    def test_facebook_login_creates_user(self, mock_verify):
+    def test_facebook_login_rejects_unknown_email(self, mock_verify):
+        mock_verify.return_value = {'email': 'fbuser@example.com',
+                                    'first_name': 'Fb', 'last_name': 'User'}
+        resp = self.client.post(self.facebook_url, {'token': 'valid-fb-token'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(User.objects.filter(email='fbuser@example.com').exists())
+
+    @patch('accounts.views.verify_facebook_token')
+    def test_facebook_login_signs_in_existing_account(self, mock_verify):
+        User.objects.create_user(username='fbuser', email='fbuser@example.com',
+                                 password='test1234')
         mock_verify.return_value = {'email': 'fbuser@example.com',
                                     'first_name': 'Fb', 'last_name': 'User'}
         resp = self.client.post(self.facebook_url, {'token': 'valid-fb-token'})
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertTrue(User.objects.filter(email='fbuser@example.com').exists())
 
     @patch('accounts.views.verify_facebook_token')
     def test_disabled_account_cannot_sign_in_socially(self, mock_verify):
@@ -279,17 +286,6 @@ class SocialLoginTest(TestCase):
                                     'first_name': '', 'last_name': ''}
         resp = self.client.post(self.facebook_url, {'token': 'valid-fb-token'})
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
-
-    @patch('accounts.views.verify_google_token')
-    def test_username_collision_gets_unique_suffix(self, mock_verify):
-        User.objects.create_user(username='clash', email='other@example.com',
-                                 password='test1234')
-        mock_verify.return_value = {'email': 'clash@example.com',
-                                    'first_name': '', 'last_name': ''}
-        resp = self.client.post(self.google_url, {'token': 'valid-google-token'})
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertTrue(User.objects.filter(email='clash@example.com')
-                        .exclude(username='clash').exists())
 
 
 class SocialTokenVerificationTest(TestCase):
@@ -354,3 +350,70 @@ class OTPAbuseProtectionTest(TestCase):
         self.assertEqual(statuses[:5], [status.HTTP_200_OK] * 5)
         self.assertEqual(statuses[5], 429)
         self.assertEqual(len(mail.outbox), 5)
+
+
+class LogoutBlacklistTest(TestCase):
+    """B1-B3: refresh-token rotation + blacklist + logout for mobile clients."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='mobileuser', email='mobile@example.com',
+            password='mobilepass123', role='student',
+        )
+
+    def _login(self):
+        resp = self.client.post('/api/auth/login/', {
+            'username': 'mobileuser', 'password': 'mobilepass123'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        return resp.data['access'], resp.data['refresh']
+
+    def test_refresh_rotates_and_old_token_is_blacklisted(self):
+        _, refresh = self._login()
+        # First refresh succeeds and returns a NEW refresh token (rotation).
+        r1 = self.client.post('/api/auth/token/refresh/', {'refresh': refresh})
+        self.assertEqual(r1.status_code, status.HTTP_200_OK)
+        self.assertIn('refresh', r1.data)
+        self.assertNotEqual(r1.data['refresh'], refresh)
+        # Reusing the OLD refresh token now fails (blacklisted after rotation).
+        r2 = self.client.post('/api/auth/token/refresh/', {'refresh': refresh})
+        self.assertEqual(r2.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_logout_blacklists_refresh_token(self):
+        access, refresh = self._login()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access}')
+        resp = self.client.post('/api/auth/logout/', {'refresh': refresh})
+        self.assertEqual(resp.status_code, status.HTTP_205_RESET_CONTENT)
+        # The blacklisted refresh token can no longer mint access tokens.
+        again = self.client.post('/api/auth/token/refresh/', {'refresh': refresh})
+        self.assertEqual(again.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_logout_requires_refresh_field(self):
+        access, _ = self._login()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access}')
+        resp = self.client.post('/api/auth/logout/', {})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_logout_requires_authentication(self):
+        _, refresh = self._login()
+        resp = self.client.post('/api/auth/logout/', {'refresh': refresh})
+        self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class ApiVersioningTest(TestCase):
+    """B8: the API is reachable at both /api/ (web) and /api/v1/ (mobile)."""
+
+    def setUp(self):
+        self.client = APIClient()
+        User.objects.create_user(
+            username='vuser', email='v@example.com', password='vpass12345', role='student')
+
+    def test_login_works_on_both_prefixes(self):
+        for base in ('/api/auth/login/', '/api/v1/auth/login/'):
+            resp = self.client.post(base, {'username': 'vuser', 'password': 'vpass12345'})
+            self.assertEqual(resp.status_code, status.HTTP_200_OK, base)
+            self.assertIn('access', resp.data)
+
+    def test_protected_endpoint_requires_auth_on_v1(self):
+        self.assertEqual(self.client.get('/api/v1/students/').status_code,
+                         status.HTTP_401_UNAUTHORIZED)

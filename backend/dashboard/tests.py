@@ -1,9 +1,13 @@
+from datetime import date, timedelta
+
 from django.test import TestCase
-from rest_framework.test import APIClient
 from rest_framework import status
+from rest_framework.test import APIClient
+
 from accounts.models import User
-from students.models import Student
+from attendance.models import Attendance
 from courses.models import Course, Enrollment
+from students.models import Student
 
 
 class FacultyScopingTest(TestCase):
@@ -129,3 +133,59 @@ class FacultyScopingTest(TestCase):
         response = self.client.get('/api/dashboard/faculty-performance/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
+
+
+class AttendancePercentageConsistencyTest(TestCase):
+    """The same underlying attendance records must produce the same
+    percentage everywhere it's shown: student breakdown, attendance-stats,
+    at-risk, and faculty-performance all share one definition of "attended"
+    (present + late + lp, with eca excluded from the denominator).
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+        self.admin = User.objects.create_user(
+            username='admin', password='testpass123', role='admin'
+        )
+        self.faculty = User.objects.create_user(
+            username='faculty', password='testpass123', role='faculty'
+        )
+        self.student = Student.objects.create(
+            first_name='John', last_name='Doe',
+            email='john@test.com', student_id='STU001',
+        )
+        self.course = Course.objects.create(
+            name='Software Engineering', code='CSE405', faculty=self.faculty
+        )
+        Enrollment.objects.create(student=self.student, course=self.course)
+
+        # present, lp (counts as attended), eca (excluded), absent
+        # -> attended=2, effective_total=3, percentage=66.7
+        statuses = ['present', 'lp', 'eca', 'absent']
+        for i, s in enumerate(statuses):
+            Attendance.objects.create(
+                student=self.student, course=self.course,
+                date=date.today() - timedelta(days=i), status=s,
+            )
+        self.client.force_authenticate(user=self.admin)
+
+    def test_percentages_match_across_dashboards(self):
+        expected_pct = 66.7
+
+        breakdown = self.client.get(f'/api/dashboard/students/{self.student.id}/attendance/')
+        self.assertEqual(breakdown.data['courses'][0]['attendance_percentage'], expected_pct)
+        self.assertEqual(breakdown.data['courses'][0]['total_classes'], 3)
+
+        stats = self.client.get('/api/dashboard/attendance-stats/')
+        course_stats = next(r for r in stats.data if r['course_id'] == self.course.id)
+        self.assertEqual(course_stats['overall_percentage'], expected_pct)
+
+        at_risk = self.client.get('/api/dashboard/at-risk/', {'threshold': 100})
+        row = next(r for r in at_risk.data if r['student_id'] == self.student.id)
+        self.assertEqual(row['attendance_percentage'], expected_pct)
+        self.assertEqual(row['total_classes'], 3)
+
+        perf = self.client.get('/api/dashboard/faculty-performance/')
+        faculty_row = next(r for r in perf.data if r['user_id'] == self.faculty.id)
+        self.assertEqual(faculty_row['overall_percentage'], expected_pct)
+        self.assertEqual(faculty_row['courses'][0]['attendance_percentage'], expected_pct)

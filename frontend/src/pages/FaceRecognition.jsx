@@ -72,8 +72,9 @@ export default function FaceRecognition() {
         formData.append("student_id", selectedStudent.student_id);
         const res = await faceAPI.register(formData);
         setResult({ type: "success", message: res.data.message });
-        setSelectedStudent(null);
-        setStudentQuery("");
+        // Keep the student selected: a few photos at different angles/lighting
+        // make matching more reliable than a single reference shot, so let the
+        // admin capture more right away instead of re-searching each time.
         faceAPI.registered().then((r) => setRegisteredFaces(r.data.students || []));
       } else if (activeTab === "recognize") {
         const res = await faceAPI.recognize(formData);
@@ -235,7 +236,14 @@ export default function FaceRecognition() {
                       <FaTimes />
                     </button>
                   </div>
-                ) : (
+                ) : null}
+                {selectedStudent && (
+                  <p style={{ margin: "6px 0 0", fontSize: 12, color: "#777" }}>
+                    Capture 3-5 photos (different angles/lighting) for the most reliable
+                    recognition, then click the &times; above when done.
+                  </p>
+                )}
+                {!selectedStudent && (
                   <div style={{ position: "relative" }}>
                     <div style={{ position: "relative" }}>
                       <FaSearch

@@ -1,7 +1,7 @@
-import os
-from pathlib import Path
 from datetime import timedelta
-from urllib.parse import urlparse, unquote
+from pathlib import Path
+from urllib.parse import unquote, urlparse
+
 from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'accounts',
     'students',
@@ -32,6 +33,7 @@ INSTALLED_APPS = [
     'attendance',
     'face',
     'dashboard',
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -109,11 +111,24 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# CORS. Native mobile (React Native / Expo Go) sends no browser `Origin` header,
+# so CORS never applies to it — only browser contexts are gated here. The defaults
+# cover the Vite web dev server plus Expo's web (19006) and Metro (8081) dev ports;
+# production origins come from the CORS_ALLOWED_ORIGINS env var.
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173',
-    cast=lambda v: [s.strip() for s in v.split(',')]
+    default=(
+        'http://localhost:3000,http://127.0.0.1:3000,'
+        'http://localhost:5173,http://127.0.0.1:5173,'
+        'http://localhost:19006,http://127.0.0.1:19006,'
+        'http://localhost:8081,http://127.0.0.1:8081'
+    ),
+    cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
 )
+
+# In local development, allow any browser origin (Expo web tunnels/LAN IPs use
+# unpredictable hosts). Never enabled in production (DEBUG is False there).
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 FRONTEND_URL = config('FRONTEND_URL', default='https://amsfrontendweb.z23.web.core.windows.net/')
 
@@ -145,6 +160,11 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'AUTH_HEADER_TYPES': ('Bearer',),
+    # Mobile clients hold long-lived refresh tokens, so rotate on every refresh
+    # and blacklist the old token. Requires the token_blacklist app (installed
+    # above) and its migrations. Logout also blacklists the presented token.
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
 
 # Email Configuration (Brevo SMTP)
@@ -166,6 +186,9 @@ GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
 GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET', default='')
 FACEBOOK_APP_ID = config('FACEBOOK_APP_ID', default='')
 FACEBOOK_APP_SECRET = config('FACEBOOK_APP_SECRET', default='')
+
+# Push-notification provider: 'console' (default, logs only) or 'expo' (Expo push API).
+PUSH_PROVIDER = config('PUSH_PROVIDER', default='console')
 
 # Face recognition provider: 'local' (dlib, default) or 'azure' (Azure AI Face API).
 FACE_PROVIDER = config('FACE_PROVIDER', default='local')

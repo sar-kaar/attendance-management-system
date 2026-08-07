@@ -54,6 +54,19 @@ export const authAPI = {
   me: () => api.get("/auth/me/"),
 };
 
+// Admin-only account management (AdminUserViewSet) - roster of login accounts,
+// distinct from studentAPI which manages Student records.
+export const adminUserAPI = {
+  list: (params) => api.get("/auth/users/", { params }),
+  get: (id) => api.get(`/auth/users/${id}/`),
+  create: (data) => api.post("/auth/users/", data),
+  update: (id, data) => api.put(`/auth/users/${id}/`, data),
+  patch: (id, data) => api.patch(`/auth/users/${id}/`, data),
+  delete: (id) => api.delete(`/auth/users/${id}/`),
+  resetPassword: (id, password) =>
+    api.post(`/auth/users/${id}/reset_password/`, { password }),
+};
+
 // The OTP itself is never sent to the browser - we only ask the server to mail
 // one, then hand back whatever the user typed for the server to judge.
 export const otpAPI = {

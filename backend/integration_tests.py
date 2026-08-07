@@ -1,10 +1,10 @@
-import json
-from django.test import TestCase
 from django.contrib.auth import get_user_model
+from django.test import TestCase
 from rest_framework.test import APIClient
-from students.models import Student
-from courses.models import Course, Enrollment
+
 from attendance.models import Attendance
+from courses.models import Course, Enrollment
+from students.models import Student
 
 User = get_user_model()
 

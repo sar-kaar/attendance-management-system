@@ -1,18 +1,28 @@
 import csv
 import io
-from rest_framework import viewsets, status, permissions
-from rest_framework.decorators import action
-from rest_framework.response import Response
+
 from django.http import HttpResponse
 from django.utils import timezone
-from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
-from .models import Attendance, AttendanceCode
-from .serializers import AttendanceSerializer, BulkAttendanceSerializer, AttendanceCodeSerializer
-from students.models import Student
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
 from courses.models import Course, Enrollment
+from notifications.services import send_to_user
+from students.models import Student
+
+from .models import Attendance, AttendanceCode, ECAActivity
+from .serializers import (
+    AttendanceCodeSerializer,
+    AttendanceSerializer,
+    BulkAttendanceSerializer,
+    ECAActivitySerializer,
+)
+from .stats import attendance_counts
 
 
 class IsAdminOrFaculty(permissions.BasePermission):
@@ -28,6 +38,28 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve', 'my_attendance']:
             return [permissions.IsAuthenticated()]
         return [permissions.IsAuthenticated(), IsAdminOrFaculty()]
+
+    def perform_create(self, serializer):
+        record = serializer.save()
+        self._notify_if_absent(record)
+
+    def _notify_if_absent(self, record):
+        """B7: push the student when they're marked absent. Best-effort — a push
+        failure must never break attendance marking, so swallow everything."""
+        if record.status != Attendance.Status.ABSENT:
+            return
+        target = getattr(record.student, 'user', None)
+        if target is None:
+            return
+        try:
+            send_to_user(
+                target,
+                title='Marked absent',
+                body=f'You were marked absent in {record.course.name} on {record.date}.',
+                data={'type': 'attendance', 'course_id': record.course_id, 'date': str(record.date)},
+            )
+        except Exception:  # noqa: BLE001 - notifications are non-critical
+            pass
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -113,8 +145,8 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def report(self, request):
-        course_id = request.query_params.get('course')
-        student_id = request.query_params.get('student')
+        # course/student filtering is already applied by get_queryset() below,
+        # which reads the same query params.
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
         qs = self.get_queryset()
@@ -122,15 +154,12 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             qs = qs.filter(date__gte=start_date)
         if end_date:
             qs = qs.filter(date__lte=end_date)
-        total = qs.count()
-        present = qs.filter(status='present').count() + qs.filter(status='late').count()
-        absent = qs.filter(status='absent').count()
-        percentage = round((present / total * 100), 1) if total > 0 else 0
+        counts = attendance_counts(qs)
         return Response({
-            'total_records': total,
-            'present': present,
-            'absent': absent,
-            'attendance_percentage': percentage,
+            'total_records': counts['effective_total'],
+            'present': counts['attended'],
+            'absent': counts['absent'],
+            'attendance_percentage': counts['percentage'],
         })
 
     @action(detail=False, methods=['get'])
@@ -147,16 +176,8 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         else:
             total_students = Student.objects.filter(is_active=True).count()
         total_courses = courses_qs.count()
-        today_attendance = attendance_qs.filter(date=today)
-        today_present = today_attendance.filter(status='present').count() + today_attendance.filter(status='late').count()
-        today_absent = today_attendance.filter(status='absent').count()
-        today_total = today_attendance.count()
-        today_pct = round((today_present / today_total * 100), 1) if today_total > 0 else 0
-
-        total_records = attendance_qs.count()
-        overall_present = attendance_qs.filter(status='present').count() + attendance_qs.filter(status='late').count()
-        overall_absent = attendance_qs.filter(status='absent').count()
-        overall_pct = round((overall_present / total_records * 100), 1) if total_records > 0 else 0
+        today_counts = attendance_counts(attendance_qs.filter(date=today))
+        overall_counts = attendance_counts(attendance_qs)
 
         recent = attendance_qs.select_related('student', 'course').order_by('-date', '-created_at')[:10]
 
@@ -164,16 +185,16 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             'total_students': total_students,
             'total_courses': total_courses,
             'today': {
-                'total': today_total,
-                'present': today_present,
-                'absent': today_absent,
-                'percentage': today_pct,
+                'total': today_counts['effective_total'],
+                'present': today_counts['attended'],
+                'absent': today_counts['absent'],
+                'percentage': today_counts['percentage'],
             },
             'overall': {
-                'total': total_records,
-                'present': overall_present,
-                'absent': overall_absent,
-                'percentage': overall_pct,
+                'total': overall_counts['effective_total'],
+                'present': overall_counts['attended'],
+                'absent': overall_counts['absent'],
+                'percentage': overall_counts['percentage'],
             },
             'recent_attendance': [
                 {
@@ -252,11 +273,12 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             elements.append(Paragraph(f"From: {start_date}  To: {end_date or 'Present'}", styles['Normal']))
         elements.append(Spacer(1, 20))
 
-        total = qs.count()
-        present = qs.filter(status='present').count() + qs.filter(status='late').count()
-        absent = qs.filter(status='absent').count()
-        pct = round((present / total * 100), 1) if total > 0 else 0
-        elements.append(Paragraph(f"Total Records: {total} | Present: {present} | Absent: {absent} | Attendance: {pct}%", styles['Normal']))
+        counts = attendance_counts(qs)
+        elements.append(Paragraph(
+            f"Total Records: {counts['effective_total']} | Present: {counts['attended']} | "
+            f"Absent: {counts['absent']} | Attendance: {counts['percentage']}%",
+            styles['Normal'],
+        ))
         elements.append(Spacer(1, 20))
 
         data = [['Student ID', 'Name', 'Course', 'Date', 'Status']]
@@ -290,6 +312,32 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.role == 'admin'
+
+
+class ECAActivityViewSet(viewsets.ModelViewSet):
+    queryset = ECAActivity.objects.all()
+    serializer_class = ECAActivitySerializer
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), IsAdminOrFaculty()]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        category = self.request.query_params.get('category')
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        if category:
+            qs = qs.filter(category=category)
+        if start_date:
+            qs = qs.filter(date__gte=start_date)
+        if end_date:
+            qs = qs.filter(date__lte=end_date)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
 
 
 class AttendanceCodeViewSet(viewsets.ModelViewSet):

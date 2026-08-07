@@ -1,8 +1,7 @@
 from rest_framework import serializers
+
+from courses.models import Enrollment
 from students.models import Student
-from courses.models import Course, Enrollment
-from attendance.models import Attendance
-from accounts.models import User
 
 
 class ProgramSerializer(serializers.Serializer):
@@ -101,6 +100,16 @@ class IncompleteRecordSerializer(serializers.Serializer):
     marked_count = serializers.IntegerField()
     unmarked_count = serializers.IntegerField()
     missing_dates = serializers.ListField()
+
+
+class ECAParticipationSerializer(serializers.Serializer):
+    student_id = serializers.IntegerField()
+    student_name = serializers.CharField()
+    student_code = serializers.CharField()
+    program = serializers.CharField(allow_null=True)
+    section = serializers.CharField(allow_null=True)
+    activity_count = serializers.IntegerField()
+    activities = serializers.ListField()
 
 
 class MasterDataImportResultSerializer(serializers.Serializer):

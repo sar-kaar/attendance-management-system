@@ -14,9 +14,12 @@ import {
   FaChartBar,
   FaBars,
   FaTimes,
+  FaUserCog,
 } from "react-icons/fa";
 import "../styles/layout.css";
 
+// `roles` restricts a nav item to specific roles; omitted means visible to
+// every role that can reach this layout (admin + faculty).
 const navItems = [
   { to: "/dashboard", icon: <FaTachometerAlt />, label: "Dashboard", end: true },
   { to: "/dashboard/students", icon: <FaUsers />, label: "Students" },
@@ -26,6 +29,7 @@ const navItems = [
   { to: "/dashboard/attendance-codes", icon: <FaTags />, label: "Attendance Codes" },
   { to: "/dashboard/reports", icon: <FaChartBar />, label: "Reports" },
   { to: "/dashboard/face-recognition", icon: <FaCamera />, label: "Face Recognition" },
+  { to: "/dashboard/users", icon: <FaUserCog />, label: "User Management", roles: ["admin"] },
 ];
 
 export default function DashboardLayout() {
@@ -81,7 +85,9 @@ export default function DashboardLayout() {
         </div>
 
         <nav>
-          {navItems.map((item) => (
+          {navItems
+            .filter((item) => !item.roles || item.roles.includes(user?.role))
+            .map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
