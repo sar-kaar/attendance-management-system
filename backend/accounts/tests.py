@@ -398,3 +398,22 @@ class LogoutBlacklistTest(TestCase):
         _, refresh = self._login()
         resp = self.client.post('/api/auth/logout/', {'refresh': refresh})
         self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class ApiVersioningTest(TestCase):
+    """B8: the API is reachable at both /api/ (web) and /api/v1/ (mobile)."""
+
+    def setUp(self):
+        self.client = APIClient()
+        User.objects.create_user(
+            username='vuser', email='v@example.com', password='vpass12345', role='student')
+
+    def test_login_works_on_both_prefixes(self):
+        for base in ('/api/auth/login/', '/api/v1/auth/login/'):
+            resp = self.client.post(base, {'username': 'vuser', 'password': 'vpass12345'})
+            self.assertEqual(resp.status_code, status.HTTP_200_OK, base)
+            self.assertIn('access', resp.data)
+
+    def test_protected_endpoint_requires_auth_on_v1(self):
+        self.assertEqual(self.client.get('/api/v1/students/').status_code,
+                         status.HTTP_401_UNAUTHORIZED)
