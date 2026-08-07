@@ -38,6 +38,18 @@ All paths below are relative to `<base>/api/v1/`.
 | POST | `auth/google/` | `{token}` (Google ID token) | `200 {access, refresh}` | throttled 30/hour |
 | POST | `auth/facebook/` | `{token}` (FB access token) | `200 {access, refresh}` | throttled 30/hour |
 
+### Social sign-in (mobile native) — the #36 decision
+
+There is **no separate mobile OAuth endpoint**. The mobile app performs the native provider sign-in itself
+(e.g. `expo-auth-session` / Google & Facebook SDKs), obtains a **provider token**, and POSTs it to the existing
+endpoints, which return the app's own JWT pair:
+
+- Google: `POST auth/google/` with `{token: <Google ID token>}` → `{access, refresh}`
+- Facebook: `POST auth/facebook/` with `{token: <Facebook access token>}` → `{access, refresh}`
+
+From there the session behaves exactly like a password login (same rotation/refresh/logout rules). This unblocks
+#37's native social sign-in; only the client-side native SDK wiring remains on the mobile side.
+
 ### Recommended client token flow
 
 1. `login/` → store `access` + `refresh` in secure storage (e.g. `expo-secure-store`).
