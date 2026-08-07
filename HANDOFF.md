@@ -1,6 +1,6 @@
 # HANDOFF — Attendance Management System
 
-> Last updated: 2026-07-20
+> Last updated: 2026-08-07
 
 ---
 
@@ -29,6 +29,35 @@
 ---
 
 ## Status: backend + frontend both substantially built and deployed
+
+### Mobile app (new, 2026-08-07) — usable Android app shipped via Capacitor
+
+- Wrapped the existing React + Vite SPA in **Capacitor 8** — native project at
+  `frontend/android/`, config at `frontend/capacitor.config.json`. Reuses 100% of
+  the web app (auth, dashboard, charts, face-recognition webcam all work in the
+  WebView); no UI port needed since the web app was already mobile-responsive.
+- Mobile build uses `.env.mobile` → `VITE_API_URL=https://ams-backend.azurewebsites.net/api`.
+- Native-aware changes to web code:
+  - `src/utils/platform.js` (`isNative()` via `Capacitor.isNativePlatform()`).
+  - `src/App.jsx` — switches to `HashRouter` when native (WebView can't do SPA
+    history paths); `BrowserRouter` on web unchanged.
+  - `src/services/api.js` — on refresh-token failure redirects via hash when native.
+  - `eslint.config.js` — ignores `android/`/`ios/` (generated native project).
+- Android manifest declares `CAMERA` permission (getUserMedia for face capture);
+  app name **AttendPro**, id `com.attendpro.ams`, custom launcher icons generated
+  for all densities.
+- **APK built and verified**: `frontend/android/app/build/outputs/apk/debug/app-debug.apk`
+  (4.4 MB debug build, Gradle 8.14.3 / compileSdk 36 / JDK 21). A copy is also at
+  `P:\AMS\AttendPro-debug.apk`.
+- Commands: `npm run cap:sync` (build web + sync), `npm run cap:apk` (assembleDebug),
+  `npm run cap:open` (Android Studio). On this machine the Android SDK lives at
+  `%LOCALAPPDATA%\Android\Sdk` (installed during this session; `local.properties`
+  already points at it and is gitignored).
+- Known limitations: WebView-based (not truly native controls); blob CSV/PDF
+  downloads rely on the WebView download manager; Google/Facebook OAuth buttons
+  need redirect URIs registered for the app scheme; offline support not built
+  (same as web). See updated `docs/tech-stack.md` "Mobile" section and
+  `frontend/README.md`.
 
 This is well ahead of the Week-by-week plan in `Guidelines/01_WEEKLY_ROADMAP.md` and
 `Guidelines/03_PROJECT_TRACKER.csv` — those documents are static plans written in

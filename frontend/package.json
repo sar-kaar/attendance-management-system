@@ -6,10 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:mobile": "vite build --mode mobile",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:sync": "npm run build:mobile && cap sync android",
+    "cap:open": "cap open android",
+    "cap:apk": "cd android && gradlew.bat assembleDebug"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
     "axios": "^1.18.1",
     "chart.js": "^4.5.1",
     "react": "^19.2.7",

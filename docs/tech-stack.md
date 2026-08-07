@@ -109,23 +109,24 @@ Each entry: **Choice** (what's used today, or planned), **Why**, **Alternatives 
 - **Why**: centralized instance with base URL + auth-header injection in one place — every page/component goes through it (enforced in [rules.md](rules.md)).
 - **Alternatives considered**: native `fetch` (axios's interceptor support for auth-header injection and refresh-token retry logic is worth the small dependency).
 
-## Mobile (Planned)
+## Mobile
 
-### Framework: React Native + Expo **(planned)**
+### Framework: Capacitor (implemented 2026-08-07) — React Native + Expo **(previously planned)**
 
-- **Why**: maximizes code sharing with the existing React/TypeScript-capable web codebase — API client, validation, types, and business-rule logic can live in `packages/` and be consumed by both web and mobile (see [Shared Packages](#shared-packages)). Expo specifically reduces native-build/signing overhead for a small team without dedicated mobile-release infrastructure.
+- **Implemented**: [Capacitor](https://capacitorjs.com/) 8 wraps the existing React + Vite SPA in a native WebView (`frontend/capacitor.config.json`, native project in `frontend/android/`). Decision made for this phase because it reuses 100% of the working web app — auth, dashboard, charts, and face-recognition webcam all run unchanged — so a usable Android app shipped in days instead of a from-scratch React Native rewrite. The app is already mobile-responsive (sidebar drawer, media queries, scrollable tables), so no UI port was needed.
+- **Why it was considered originally**: Expo/React Native maximizes code sharing with the web codebase — API client, validation, types, and business-rule logic can live in `packages/` and be consumed by both web and mobile (see [Shared Packages](#shared-packages)). Expo reduces native-build/signing overhead for a small team without dedicated mobile-release infrastructure.
 - **Alternatives considered**: Flutter (excellent cross-platform performance, but Dart cannot consume the JS/TS shared packages — would mean duplicating types/validation/business rules in a second language); native Kotlin/Swift (best per-platform experience, but doubles the mobile codebase and the team size needed to maintain it — not justified for this project's scale).
-- **Pros**: single codebase for iOS/Android, shares `packages/api-client`, `packages/types`, `packages/validation` directly with web.
-- **Cons**: Expo's managed workflow limits some native-module access until you eject/use a dev client — acceptable given the mobile feature set planned (QR attendance, push notifications, camera access for face capture — all supported by standard Expo modules).
-- **Upgrade strategy**: track Expo SDK releases (roughly quarterly); Expo's upgrade tooling (`expo upgrade`) handles most of the native-dependency churn automatically.
+- **Pros (Capacitor)**: single codebase for iOS/Android reusing the existing SPA; no per-screen rewrite; webcam + `getUserMedia` work in the WebView with the `CAMERA` permission declared in `AndroidManifest.xml`.
+- **Cons (Capacitor)**: the UI is a WebView rather than truly native controls; future features (push notifications, secure keychain token storage, offline sync) need native plugins rather than pure web APIs; blob-based CSV/PDF downloads rely on the WebView download manager.
+- **Build**: `npm run cap:sync` (web build with `--mode mobile` pointing `VITE_API_URL` at the deployed backend) then `npm run cap:apk` (`gradlew assembleDebug`). Debug APK lands in `frontend/android/app/build/outputs/apk/debug/app-debug.apk`. **Upgrade path**: if native-feature depth is ever needed, a later phase can port screens to React Native/Expo following this doc's original plan — the web app remains the single source of truth either way.
 
-### Mobile Navigation: React Navigation **(planned)**
+### Mobile Navigation
 
-- **Why**: the standard for React Native, well-integrated with Expo.
+- **Implemented**: the existing React Router routes run as-is; the app switches to `HashRouter` when it detects the native runtime (`window.Capacitor`), since the WebView serves static files and can't route history paths server-side.
 
 ### Mobile State/Offline: TanStack Query + a local persistence layer (e.g. WatermelonDB or Expo SQLite) **(planned)**
 
-- **Why**: offline attendance marking + sync is a stated requirement (see [prd.md](prd.md)) — this needs a real local-first data layer, not just in-memory Context. Decision on the specific local DB is deferred to the mobile-foundation phase ([phases.md](phases.md)); documented here as a placeholder so it isn't forgotten.
+- **Why**: offline attendance marking + sync is a stated requirement (see [prd.md](prd.md)) — this needs a real local-first data layer, not just in-memory Context. Decision on the specific local DB is deferred to a future mobile phase ([phases.md](phases.md)); documented here as a placeholder so it isn't forgotten. The current Capacitor app is online-only like the web app.
 
 ## Shared Packages
 
