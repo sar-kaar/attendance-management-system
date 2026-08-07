@@ -75,9 +75,11 @@ interrelated (auth → session lifecycle → device → push) and independently 
 | B5 | Device **register / unregister / list** — `/api/devices/`, `/register/`, `/unregister/` | #42 | ✅ Done |
 | B6 | **Push-send service** abstraction (`PUSH_PROVIDER` = console/expo) | #42 | ✅ Done |
 | B7 | Push on **absence** marking (`AttendanceViewSet.perform_create`) | #42 | ✅ Done |
-| B8 | **API versioning** / stable mobile contract (`/api/` namespace doc) | #36 | Todo |
-| B9 | **CORS / allowed origins** review for mobile clients | #36 | Todo |
-| B10 | **Contract doc** for mobile (auth flow, endpoints, error shapes) | #36 | Todo |
+| B8 | **API versioning** — `/api/v1/` namespace (non-breaking; `/api/` still serves web) | #36 | ✅ Done |
+| B9 | **CORS** review — Expo web/Metro dev ports + DEBUG allow-all; native RN unaffected | #36 | ✅ Done |
+| B10 | **Mobile API contract doc** — [mobile-api-contract.md](mobile-api-contract.md) | #36 | ✅ Done |
+
+**#36 Backend Readiness for Mobile is COMPLETE** — all of B1–B10 shipped. 113 tests passing.
 
 New endpoints shipped this session: `POST /api/auth/logout/`, `GET /api/devices/`,
 `POST /api/devices/register/`, `POST /api/devices/unregister/`. New app: `notifications`
@@ -101,3 +103,6 @@ Google/Facebook OAuth, CORS middleware, DRF pagination.
   Ekata + Prizma; backend/pipeline → Abhishek; #23/#48 → Ekata), which also populates the Project board Assignees
   field; Master Tracker **"7. Feature Backlog"** Assignee column filled via Composio. The two standalone mirror
   sheets created 2026-08-06 were trashed — we edit the existing team sheets only.
+- **2026-08-07** — **B8–B10 shipped**, completing **#36**: `/api/v1/` versioned namespace (non-breaking), CORS
+  reviewed for Expo/mobile, and [mobile-api-contract.md](mobile-api-contract.md) written for the mobile team.
+  113 tests passing. #36 moved to Done + closed.

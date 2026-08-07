@@ -111,11 +111,24 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# CORS. Native mobile (React Native / Expo Go) sends no browser `Origin` header,
+# so CORS never applies to it — only browser contexts are gated here. The defaults
+# cover the Vite web dev server plus Expo's web (19006) and Metro (8081) dev ports;
+# production origins come from the CORS_ALLOWED_ORIGINS env var.
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173',
-    cast=lambda v: [s.strip() for s in v.split(',')]
+    default=(
+        'http://localhost:3000,http://127.0.0.1:3000,'
+        'http://localhost:5173,http://127.0.0.1:5173,'
+        'http://localhost:19006,http://127.0.0.1:19006,'
+        'http://localhost:8081,http://127.0.0.1:8081'
+    ),
+    cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
 )
+
+# In local development, allow any browser origin (Expo web tunnels/LAN IPs use
+# unpredictable hosts). Never enabled in production (DEBUG is False there).
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 FRONTEND_URL = config('FRONTEND_URL', default='https://amsfrontendweb.z23.web.core.windows.net/')
 
