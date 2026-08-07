@@ -39,6 +39,27 @@ test:
     - if: '$CI_COMMIT_BRANCH == "develop"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
+mobile:
+  stage: test
+  image: node:20
+  variables:
+    npm_config_cache: "$CI_PROJECT_DIR/.cache/npm"
+  cache:
+    key:
+      files:
+        - mobile/package-lock.json
+    paths:
+      - .cache/npm
+  script:
+    - cd mobile
+    - npm ci
+    - npm run lint
+    - npm run typecheck
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
 build-frontend:
   stage: build
   image: node:20
